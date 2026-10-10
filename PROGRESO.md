@@ -11,7 +11,7 @@
 - [x] Bloque 7: Dashboard Streamlit
 - [x] Bloque 8: PDF semanal
 - [x] Bloque 9: Pipeline semanal y automatizacion
-- [ ] Bloque 10: Calidad y documentacion
+- [x] Bloque 10: Calidad y documentacion
 - [ ] Bloque 11: Entrega final comprimida
 
 ## Bitacora
@@ -148,6 +148,20 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - README con despliegue en Streamlit Community Cloud (no desplegado: requiere cuentas).
 - 47 tests en verde.
 
+### Bloque 10: Calidad y documentacion (2026-10-10)
+- pytest: 47 tests en verde.
+- ruff (F, E9, B): imports sin usar, variables muertas, zip sin strict y lambda en
+  bucle corregidos. 101 docstrings cortos agregados a funciones publicas.
+- Fines de linea normalizados a LF en todo el repo + .gitattributes (Windows estaba
+  guardando CRLF en algunos archivos).
+- README completo (que es, capturas, indicadores, 3 comandos, automatizacion,
+  despliegue, aviso, licencia) y CONTRIBUTING.md.
+- Dashboard: abre por defecto en la ultima semana completa; marcas del eje al mediodia
+  para que aparezcan los 7 dias. Capturas regeneradas.
+- **Prueba desde cero OK**: clon del repo en carpeta temporal, venv nuevo con Python
+  3.14, `pip install -r requirements.txt`, `python run_weekly.py` (exit 0, mismo
+  resultado de W40) y `pytest` (47 passed).
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -201,6 +215,8 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   (~1 MB por semana, la mayor parte el costo marginal de 235 barras). Es simple y
   Streamlit Cloud lo lee directo del repo. Si crece demasiado, recortar costo_marginal
   a la barra de referencia.
+
+- **ruff** se uso solo para revisar; no se agrega a requirements (dependencias minimas).
 
 ## Pendientes
 
