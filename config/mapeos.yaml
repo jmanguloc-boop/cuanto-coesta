@@ -1,0 +1,26 @@
+# Mapeos de nombres del COES a categorias del proyecto.
+# Las claves son el nombre del COES sin ningun caracter no ASCII (el servidor
+# a veces manda tildes rotas: "BIOG�S"), sin espacios ni simbolos.
+# Ej: "BIOGÁS" y "BIOG�S" -> "BIOGS"
+
+recursos:            # GraficoTipoCombustible del portal de generacion
+  HDRICO:            {nombre: "Hídrico",       tecnologia: hidro}
+  GAS:               {nombre: "Gas natural",   tecnologia: gas}
+  NAFTAGASREFINERA:  {nombre: "Nafta y gas de refinería", tecnologia: gas}
+  SOLAR:             {nombre: "Solar",         tecnologia: solar}
+  ELICA:             {nombre: "Eólica",        tecnologia: eolica}
+  DIESEL:            {nombre: "Diésel",        tecnologia: diesel}
+  RESIDUAL:          {nombre: "Residual",      tecnologia: diesel}
+  CARBN:             {nombre: "Carbón",        tecnologia: carbon}
+  BAGAZO:            {nombre: "Bagazo",        tecnologia: biomasa}
+  BIOGS:             {nombre: "Biogás",        tecnologia: biomasa}
+
+tipos_central:       # fila TIPO de DESPACHO_EJECUTADO (IEOD)
+  HIDROELCTRICA:     hidro
+  TERMOELCTRICA:     termica   # el IEOD no dice el combustible por unidad
+  SOLAR:             solar
+  ELICA:             eolica
+
+# Tecnologias que cuentan como renovables
+renovables_con_hidro: [hidro, solar, eolica, biomasa]
+renovables_sin_hidro: [solar, eolica, biomasa]

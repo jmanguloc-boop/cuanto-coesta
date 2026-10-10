@@ -5,7 +5,7 @@
 - [x] Bloque 1: Setup del repo
 - [x] Bloque 2: Reconocimiento de fuentes del COES
 - [x] Bloque 3: Extractor
-- [ ] Bloque 4: Transformacion y modelo de datos
+- [x] Bloque 4: Transformacion y modelo de datos
 - [ ] Bloque 5: Indicadores semanales
 - [ ] Bloque 6: Narrativa automatica
 - [ ] Bloque 7: Dashboard Streamlit
@@ -52,6 +52,21 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - Semana 2026-W40 completa en 35 s (22 archivos, ~13 MB). Respaldo probado con el 09/10.
 - 10 tests sin red, usando data/samples.
 
+### Bloque 4: Transformacion y modelo de datos (2026-10-10)
+- src/transform/: comun.py (formato largo, fechas, validaciones), tablas.py (un
+  lector por tabla), CLI `python -m src.transform --semana AAAA-Www`.
+- 5 tablas parquet por semana: demanda, generacion (por tecnologia), costo_marginal
+  (235 barras), embalses (Hm3 y msnm), centrales (176 unidades con empresa, area y tecnologia).
+- config/mapeos.yaml: recursos y tipos de central -> tecnologia del proyecto.
+- Validaciones que avisan sin romper (duplicados, faltantes, fuera de rango) en
+  data/processed/avisos/. docs/diccionario_datos.md.
+- Semana 2026-W40: 5 tablas en 13 s, 1 aviso (CMg del 02/10 con 39 de 48
+  intervalos en el propio IEOD). Consultable con DuckDB.
+- **Hallazgo**: el portal de generacion publica SOLAR y BAGAZO con las etiquetas
+  cruzadas. Se detecta por la forma diaria y se corrige; tras la correccion la
+  solar del portal cuadra al MWh con el IEOD los 7 dias.
+- 22 tests en verde.
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -74,7 +89,17 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   se puede pedir una hoja suelta, y el mismo archivo sirve luego para eventos y
   mantenimientos.
 
+- **fecha_hora** = fin del intervalo, hora Peru sin zona guardada (mas simple en
+  parquet/DuckDB). La columna `fecha` da el dia operativo.
+- **es_preliminar** = el dia no tiene IEOD publicado todavia (o el dato es del respaldo en tiempo real).
+- **Termicas por central**: el IEOD no dice el combustible por unidad, asi que en la
+  tabla centrales quedan como "termica". El mix por combustible sale de la tabla generacion.
+- **Correccion SOLAR/BAGAZO** por deteccion de forma, no con un intercambio fijo,
+  para no romper si el COES arregla su portal.
+
 ## Pendientes
 
 - Eventos, mantenimientos e indisponibilidades (ya vienen en el Anexo A) para una version futura.
 - CMg revisados (mensuales, definitivos) no se usan: llegan con ~1 mes de retraso.
+- Huecos propios del COES en CMg (ej. 02/10/2026: 39 de 48 intervalos). Los promedios usan los intervalos disponibles.
+- Reportar al COES el cruce de etiquetas SOLAR/BAGAZO de su portal (opcional, accion del usuario).
