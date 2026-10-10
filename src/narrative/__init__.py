@@ -114,6 +114,10 @@ def _titular(hecho, r):
         sentido = "sube" if d["razon"] > 1 else "baja"
         return elegir(P.TITULARES[("anomalia", sentido)], sem).format(
             dia=dia_texto(d["fecha"]), veces=f"{d['razon']:.1f} veces".replace(".0 veces", " veces"), valor=soles(d["valor"]))
+    if hecho.tipo == "rareza":
+        plantilla = elegir(P.TITULARES[("rareza",)], sem)
+        return plantilla.format(n=d["n"], momento=dia_y_hora(d["fecha_hora"]), valor=soles(d["valor"]),
+                                mediana=soles(d["mediana"]))
     if hecho.tipo == "dato":
         plantilla = elegir(P.TITULARES[("dato", hecho.clave)], sem, hecho.clave)
         if hecho.clave == "mix_generacion":
@@ -184,6 +188,14 @@ def parrafo_precios(r):
     if not r.perfil_cmg.empty and r.perfil_cmg["actual"].notna().any():
         hora_cara = int(r.perfil_cmg.loc[r.perfil_cmg["actual"].idxmax(), "hora"])
         texto += f" En promedio, la hora más cara del día fue la de las {hora_texto(hora_cara)}."
+    if r.n_rarezas:
+        peor = r.rarezas[0]
+        texto += (f" El detector de rarezas marcó {r.n_rarezas} medias horas fuera de lo habitual para su hora;"
+                  f" la más llamativa fue el {dia_y_hora(peor['fecha_hora'])} ({soles(peor['valor'])}, cuando lo"
+                  f" normal a esa hora es {soles(peor['mediana'])}).")
+    if r.revision:
+        texto += (f" Entre lo publicado en tiempo real y la versión confirmada del COES, el precio cambió en"
+                  f" promedio {porcentaje(r.revision['diferencia_media_pct'])}.")
     alto, bajo = r.ind("horas_precio_alto"), r.ind("horas_precio_bajo")
     u = r.umbrales_precio
     texto += (f" Hubo {horas(alto.valor)} horas con precio alto (más de S/ {u['alto']}) y "
@@ -270,6 +282,31 @@ def parrafo_hidrologia(r):
     return texto
 
 
+# ---------- explicacion en tres niveles ----------
+
+def niveles(r, clave):
+    """Lectura rapida, explicacion intermedia y nota tecnica de un indicador de la semana."""
+    glosario = config.glosario()["indicadores"]
+    g = glosario[clave]
+    ind = r.ind(clave)
+    tecnica = " ".join(g.get("nota_tecnica", "").split())
+    if ind is None or ind.valor is None:
+        return {"rapida": f"{g['nombre']}: sin datos esta semana.", "intermedia": "", "tecnica": tecnica}
+    valor = _valor_ind(ind)
+    if ind.var_anterior is None:
+        rapida = f"{g['nombre']}: {valor}."
+        intermedia = " ".join(g["explicacion_simple"].split())
+    else:
+        umbral = 0.001 if ind.es_puntos else 0.005
+        rapida = f"{g['nombre']}: " + ("casi sin cambios." if abs(ind.var_anterior) < umbral
+                                         else f"{sube_baja(ind.var_anterior)}.")
+        cambio = pp(ind.var_anterior) if ind.es_puntos else pct(ind.var_anterior)
+        anterior = _valor_ind(type(ind)(clave, ind.anterior, ind.unidad)) if ind.anterior is not None else "s/d"
+        intermedia = (f"{valor}, {cambio} {sube_baja(ind.var_anterior, 'más', 'menos')} que la semana anterior"
+                      f" ({anterior}).")
+    return {"rapida": pulir(rapida), "intermedia": pulir(intermedia), "tecnica": tecnica}
+
+
 # ---------- titulos de graficos (dicen la conclusion) ----------
 
 def titulos_graficos(r):
@@ -289,6 +326,10 @@ def titulos_graficos(r):
     if r.mix:
         lider = max(r.mix, key=r.mix.get)
         t["generacion"] = f"{nombre_tec(lider)} aportó {porcentaje(r.mix[lider])} de la electricidad"
+    barras = r.cmg_barras.dropna(subset=["latitud"]) if not r.cmg_barras.empty else r.cmg_barras
+    if len(barras):
+        cara = barras.iloc[-1]
+        t["mapa"] = f"La energía más cara se entregó en {cara['barra'].title()}: {soles(cara['cmg_promedio'])}"
     vol = r.ind("volumen_embalses")
     if vol and vol.var_anterior is not None:
         t["embalses"] = ("Los embalses se mantuvieron estables" if abs(vol.var_anterior) < 0.005 else

@@ -68,6 +68,16 @@ def hechos_por_anomalia(serie_cmg: pd.DataFrame):
     return sorted(hechos, key=lambda h: -h.puntaje)[:1]
 
 
+def hechos_por_rareza(rarezas, n_rarezas):
+    """Precios raros para su hora del dia (no solo los maximos)."""
+    if not rarezas:
+        return []
+    peor = rarezas[0]
+    return [Hecho("rareza", "rarezas", 1.5 + min(peor["intensidad"], 1.0),
+                  {"n": n_rarezas, "fecha_hora": peor["fecha_hora"], "valor": peor["valor"], "mediana": peor["mediana"],
+                   "regla": peor["regla"]})]
+
+
 def hechos_de_respaldo(indicadores, mix):
     """Datos siempre disponibles para completar 3 hechos aunque la semana sea tranquila."""
     hechos = []
@@ -88,10 +98,11 @@ def hechos_de_respaldo(indicadores, mix):
     return hechos
 
 
-def top_hechos(indicadores, mix, historico, serie_cmg, n=3):
+def top_hechos(indicadores, mix, historico, serie_cmg, rarezas=(), n_rarezas=0, n=3):
     """Los n hechos mas relevantes, uno por indicador."""
     candidatos = (hechos_por_record(indicadores, historico) + hechos_por_variacion(indicadores)
-                  + hechos_por_anomalia(serie_cmg) + hechos_de_respaldo(indicadores, mix))
+                  + hechos_por_anomalia(serie_cmg) + hechos_por_rareza(list(rarezas), n_rarezas)
+                  + hechos_de_respaldo(indicadores, mix))
     elegidos, usados = [], set()
     for hecho in sorted(candidatos, key=lambda h: -h.puntaje):
         if hecho.clave in usados:   # un hecho por indicador

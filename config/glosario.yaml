@@ -20,6 +20,7 @@ indicadores:
     ejemplo_cotidiano: >
       Como el precio del pasaje en hora punta: cuando hay mucha gente, el último
       pasajero lo paga más caro.
+    nota_tecnica: "Promedio simple de los 336 intervalos de 30 min de la semana (lunes a domingo) del CMg total en la barra Santa Rosa 220 kV, versión post operación del IEOD. Los días sin IEOD usan el CMg en tiempo real y se marcan preliminares."
 
   cmg_maximo:
     nombre: "Precio más alto de la semana"
@@ -28,6 +29,7 @@ indicadores:
       Suele aparecer cuando hay que prender centrales caras para cubrir el consumo.
     por_que_importa: "Muestra qué tan caro se pone producir electricidad en los momentos más ajustados."
     unidad: "S/ por MWh"
+    nota_tecnica: "Máximo de los intervalos de 30 min de la semana en Santa Rosa 220 kV. La hora indicada es el fin del intervalo."
 
   cmg_minimo:
     nombre: "Precio más bajo de la semana"
@@ -36,6 +38,7 @@ indicadores:
       por ejemplo de madrugada o con mucho sol y agua.
     por_que_importa: "Indica cuándo la electricidad fue más barata de producir."
     unidad: "S/ por MWh"
+    nota_tecnica: "Mínimo de los intervalos de 30 min de la semana en Santa Rosa 220 kV. La hora indicada es el fin del intervalo."
 
   horas_precio_bajo:
     nombre: "Horas con precio bajo"
@@ -44,6 +47,7 @@ indicadores:
       Son horas en las que la energía fue especialmente barata.
     por_que_importa: "Más horas baratas significa un sistema con energía sobrante y de bajo costo."
     unidad: "horas"
+    nota_tecnica: "Número de intervalos de 30 min con CMg total menor a S/ 100 por MWh, multiplicado por 0.5 h. Umbral fijo en config/analisis.yaml."
 
   horas_precio_alto:
     nombre: "Horas con precio alto"
@@ -52,6 +56,7 @@ indicadores:
       de que se encendieron centrales caras.
     por_que_importa: "Muchas horas caras encarecen la operación del sistema."
     unidad: "horas"
+    nota_tecnica: "Número de intervalos de 30 min con CMg total mayor a S/ 500 por MWh, multiplicado por 0.5 h. Umbral fijo en config/analisis.yaml."
 
   perfil_horario:
     nombre: "Precio según la hora del día"
@@ -60,6 +65,7 @@ indicadores:
       semana. Muestra en qué momentos del día la electricidad sale más cara.
     por_que_importa: "Ayuda a ver cuándo conviene consumir y cuándo el sistema está más exigido."
     unidad: "S/ por MWh"
+    nota_tecnica: "Promedio del CMg por hora del día: los intervalos que terminan a las 00:30 y 01:00 forman la hora 0, y así sucesivamente."
 
   demanda_maxima:
     nombre: "Demanda máxima"
@@ -71,6 +77,7 @@ indicadores:
     ejemplo_cotidiano: >
       Como la hora de mayor afluencia en un restaurante: hay que tener mesas para
       ese momento aunque el resto del día sobren.
+    nota_tecnica: "Máximo de la demanda ejecutada del SEIN (portal COES, intervalos de 30 min). Es potencia media del intervalo, no un pico instantáneo."
 
   energia_semana:
     nombre: "Energía consumida en la semana"
@@ -79,6 +86,7 @@ indicadores:
       e industrias juntos. 1 GWh equivale a un millón de kWh, la unidad de tu recibo.
     por_que_importa: "Si crece, suele ser señal de más actividad económica."
     unidad: "GWh"
+    nota_tecnica: "Suma de la demanda ejecutada de cada intervalo por 0.5 h, en GWh. Coincide con la generación total de la semana (verificado)."
 
   error_programa_diario:
     nombre: "Diferencia con lo programado"
@@ -87,6 +95,7 @@ indicadores:
       anterior. Un número bajo significa que el pronóstico fue bueno.
     por_que_importa: "Un buen pronóstico permite encender solo las centrales necesarias."
     unidad: "%"
+    nota_tecnica: "Promedio del valor absoluto de (ejecutada menos programa diario) dividido entre el promedio de la ejecutada."
 
   mix_generacion:
     nombre: "Mix de generación"
@@ -95,6 +104,7 @@ indicadores:
       otras, como porcentaje del total producido.
     por_que_importa: "El mix define cuánto cuesta la electricidad y cuánto contamina."
     unidad: "%"
+    nota_tecnica: "Energía por tecnología (MW por 0.5 h) del portal de generación, agrupando los recursos del COES según config/mapeos.yaml."
 
   participacion_renovable:
     nombre: "Energía renovable (con hidro)"
@@ -103,6 +113,7 @@ indicadores:
       viento y biomasa.
     por_que_importa: "Más renovable suele significar menos emisiones y menos dependencia del gas."
     unidad: "%"
+    nota_tecnica: "Energía de hidro, solar, eólica y biomasa entre la energía total de la semana."
 
   participacion_renovable_sin_hidro:
     nombre: "Energía renovable sin hidro"
@@ -111,6 +122,7 @@ indicadores:
       las fuentes nuevas que más están creciendo.
     por_que_importa: "Mide el avance de las renovables no convencionales en el Perú."
     unidad: "%"
+    nota_tecnica: "Energía de solar, eólica y biomasa entre la energía total de la semana."
 
   precio_capturado_solar:
     nombre: "Precio capturado por la solar"
@@ -122,6 +134,7 @@ indicadores:
     ejemplo_cotidiano: >
       Como un vendedor de helados que solo vende al mediodía: le importa el precio
       del mediodía, no el del día entero.
+    nota_tecnica: "Suma de (MW solar por CMg Santa Rosa) entre la suma de MW solar, intervalo a intervalo. Ponderación por generación; se compara con el promedio simple."
 
   precio_capturado_eolica:
     nombre: "Precio capturado por la eólica"
@@ -130,6 +143,7 @@ indicadores:
       por cuánto produjeron.
     por_que_importa: "Compara si el viento sopla en horas caras o baratas."
     unidad: "S/ por MWh"
+    nota_tecnica: "Suma de (MW eólico por CMg Santa Rosa) entre la suma de MW eólico, intervalo a intervalo."
 
   volumen_embalses:
     nombre: "Agua en los embalses"
@@ -139,6 +153,52 @@ indicadores:
     por_que_importa: "Más agua guardada permite producir electricidad barata en los meses secos."
     unidad: "Hm3"
     ejemplo_cotidiano: "Como la alcancía del sistema: lo que se guarda en lluvias se gasta en la sequía."
+
+    nota_tecnica: "Suma de la última lectura de la semana del volumen útil (Hm3) de cada embalse del IEOD (hoja PRINCIP_VOLÚMENES). La variación usa solo embalses con dato en ambas semanas."
+  rarezas:
+    nombre: "Precios raros para su hora"
+    explicacion_simple: >
+      Medias horas en que el precio se alejó mucho de lo habitual para esa misma hora
+      del día. No es lo mismo que el precio más alto: S/ 300 puede ser normal de noche y raro de madrugada.
+    por_que_importa: "Detecta situaciones fuera de lo común aunque no sean récords."
+    unidad: "intervalos"
+    nota_tecnica: >
+      Para cada media hora se mira el rango (mínimo y máximo) del CMg a esa misma hora
+      en los 28 días previos. Es raro si supera el máximo o baja del mínimo en al menos
+      10 % y además se aleja S/ 60 por MWh de la mediana. Con menos de 14 días previos no se juzga.
+
+  revision_cmg:
+    nombre: "Cuánto cambió el dato preliminar"
+    explicacion_simple: >
+      El COES publica el precio casi en vivo y uno o dos días después lo confirma.
+      Este número dice, en promedio, cuánto cambió entre una versión y otra.
+    por_que_importa: "Mide qué tan confiable es mirar el precio en tiempo real."
+    unidad: "%"
+    nota_tecnica: >
+      Promedio de |CMg IEOD menos CMg tiempo real| dividido entre el CMg IEOD promedio,
+      en Santa Rosa 220 kV, para las medias horas que tienen ambas versiones.
+
+  mapa_cmg:
+    nombre: "Mapa del costo eléctrico"
+    explicacion_simple: >
+      El precio promedio de la semana en cada barra del sistema. Las diferencias
+      entre zonas aparecen cuando las líneas de transmisión se congestionan.
+    por_que_importa: "Muestra en qué partes del país la energía fue más cara de entregar."
+    unidad: "S/ por MWh"
+    nota_tecnica: >
+      Promedio semanal del CMg total por barra (IEOD). Coordenadas tomadas del mapa
+      público de costos marginales del COES (assets/mapas/barras_coordenadas.csv).
+
+  precio_ahora:
+    nombre: "Precio ahora"
+    explicacion_simple: >
+      El último costo marginal que publicó el COES, comparado con la media hora
+      anterior, con ayer a la misma hora y con hace una semana.
+    por_que_importa: "Permite ver si el momento actual es normal o fuera de lo común."
+    unidad: "S/ por MWh"
+    nota_tecnica: >
+      CMg en tiempo real de Santa Rosa 220 kV, consultado cada 30 minutos. Es preliminar.
+      Si el COES no publicó un dato nuevo se muestra el último con su antigüedad.
 
 terminos:
   coes:

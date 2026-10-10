@@ -73,6 +73,10 @@ class ResumenSemanal:
     serie_embalses: pd.DataFrame               # fecha, valor (Hm3 total diario)
     embalses_detalle: pd.DataFrame             # entidad, cuenca, actual, anterior
     historico: pd.DataFrame = field(default_factory=pd.DataFrame)  # metricas de semanas previas
+    rarezas: list = field(default_factory=list)                    # intervalos raros para su hora (top 5)
+    n_rarezas: int = 0
+    cmg_barras: pd.DataFrame = field(default_factory=pd.DataFrame) # promedio por barra con coordenadas
+    revision: dict = field(default_factory=dict)                   # preliminar vs post operacion
 
     def ind(self, clave):
         """Indicador por clave o None."""

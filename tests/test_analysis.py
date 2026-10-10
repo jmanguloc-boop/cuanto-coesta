@@ -82,3 +82,31 @@ def test_comparar_embalses_solo_comunes():
     previa = pd.Series({"A": 8.0, "B": 20.0})
     var, ref = comparar_embalses(actual, previa)
     assert ref == 28.0 and var == pytest.approx(30 / 28 - 1)
+
+
+def test_revision_preliminar_vs_revisado():
+    from src.analysis.indicadores import revision_preliminar
+    t = pd.to_datetime(["2026-10-01 10:00", "2026-10-01 10:30"])
+    base = {"entidad": "B", "variable": "cmg_total"}
+    pre = pd.DataFrame({"fecha_hora": t, "valor": [100.0, 200.0], **base})
+    rev = pd.DataFrame({"fecha_hora": t, "valor": [100.0, 300.0], "fuente": "ieod_cmg", **base})
+    r = revision_preliminar(pre, rev, "B")
+    assert r["intervalos"] == 2 and r["cambiados"] == 1
+    assert r["diferencia_media_pct"] == pytest.approx(50 / 200)
+
+
+def test_cmg_por_barra_con_coordenadas():
+    from src.analysis.indicadores import cmg_por_barra
+    cmg = pd.DataFrame({"entidad": ["SANTA ROSA 220", "SANTA ROSA 220", "INVENTADA 1"],
+                        "variable": "cmg_total", "valor": [100.0, 200.0, 50.0]})
+    barras = cmg_por_barra(cmg).set_index("barra")
+    assert barras.loc["SANTA ROSA 220", "cmg_promedio"] == 150.0
+    assert barras.loc["SANTA ROSA 220", "latitud"] < 0          # Lima esta al sur del ecuador
+    assert pd.isna(barras.loc["INVENTADA 1", "latitud"])
+
+
+def test_tres_niveles(resumen):
+    from src.narrative import niveles
+    n = niveles(resumen, "cmg_promedio")
+    assert n["rapida"].startswith("Costo marginal promedio")
+    assert n["intermedia"] and "Santa Rosa" in n["tecnica"]

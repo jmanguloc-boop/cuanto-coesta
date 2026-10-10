@@ -1,8 +1,8 @@
 """Detector de rarezas: valores inusuales para su hora del dia, con la regla explicada.
 
 No busca solo maximos: un precio de S/ 300 puede ser normal a las 7 p. m. y raro a
-las 3 a. m. Se compara cada valor contra la mediana de esa misma hora en los dias
-previos, usando la MAD (desviacion absoluta mediana), que no se deja arrastrar por picos.
+las 3 a. m. Un valor es raro si rompe el rango visto a esa misma hora en las 4
+semanas previas (por encima del maximo o por debajo del minimo, con margen).
 """
 
 from dataclasses import dataclass
@@ -18,10 +18,12 @@ from src.utils.datos import semanas_disponibles
 class Evaluacion:
     valor: float
     mediana: float | None
-    z: float | None
+    minimo: float | None
+    maximo: float | None
     n: int
     es_rara: bool
     regla: str            # texto que explica que regla se activo (o por que no se juzga)
+    intensidad: float = 0.0   # cuanto rompe el rango, relativo (para ordenar)
 
 
 def _cfg():
@@ -55,30 +57,35 @@ def historial_barra(barra, con_ahora=None, raiz=None):
 
 
 def evaluar(valor, momento, historia: pd.Series, cfg=None) -> Evaluacion:
-    """Compara un valor con la misma hora del dia en los dias previos a 'momento'."""
+    """Compara un valor con el rango de esa misma hora del dia en los dias previos a 'momento'."""
     cfg = cfg or _cfg()
     momento = pd.Timestamp(momento)
     inicio = momento - timedelta(days=cfg["dias_historia"])
     previos = historia[(historia.index < momento) & (historia.index >= inicio)]
     misma_hora = previos[(previos.index.hour == momento.hour) & (previos.index.minute == momento.minute)].dropna()
     n = len(misma_hora)
+    hora = f"{momento.hour}:{momento.minute:02d}"
     if n < cfg["minimo_observaciones"]:
-        return Evaluacion(valor, None, None, n, False,
-                          f"Sin juicio: solo hay {n} días previos a esta hora (se piden {cfg['minimo_observaciones']}).")
-    mediana = float(misma_hora.median())
-    mad = float((misma_hora - mediana).abs().median()) * 1.4826
-    escala = max(mad, 1.0)   # evita dividir por cero cuando el precio estuvo plano
-    z = (valor - mediana) / escala
-    diferencia = valor - mediana
-    es_rara = abs(z) >= cfg["z_robusto"] and abs(diferencia) >= cfg["diferencia_minima"]
-    sentido = "por encima" if diferencia > 0 else "por debajo"
-    if es_rara:
-        regla = (f"Raro para la hora: S/ {abs(diferencia):,.1f} {sentido} de lo habitual a esta hora "
-                 f"(mediana de {n} días: S/ {mediana:,.1f}). Regla: alejarse {cfg['z_robusto']} veces la "
-                 f"variación típica y al menos S/ {cfg['diferencia_minima']}.")
-    else:
-        regla = f"Dentro de lo habitual para esta hora (mediana de {n} días: S/ {mediana:,.1f})."
-    return Evaluacion(valor, mediana, z, n, es_rara, regla)
+        return Evaluacion(valor, None, None, None, n, False,
+                          f"Sin juicio: solo hay {n} días previos con dato a las {hora} "
+                          f"(se piden {cfg['minimo_observaciones']}).")
+    mediana, minimo, maximo = float(misma_hora.median()), float(misma_hora.min()), float(misma_hora.max())
+    margen = cfg["margen_rango"]
+    lejos = abs(valor - mediana) >= cfg["diferencia_minima"]
+    semanas = round(cfg["dias_historia"] / 7)
+    if valor > maximo * (1 + margen) and lejos:
+        regla = (f"El precio más alto para las {hora} en {semanas} semanas: S/ {valor:,.1f}, cuando el máximo previo "
+                 f"era S/ {maximo:,.1f} y lo habitual S/ {mediana:,.1f}. Regla: superar el máximo de {n} días "
+                 f"en al menos {margen * 100:.0f}%.")
+        return Evaluacion(valor, mediana, minimo, maximo, n, True, regla, valor / max(maximo, 1) - 1)
+    if valor < minimo * (1 - margen) and lejos:
+        regla = (f"El precio más bajo para las {hora} en {semanas} semanas: S/ {valor:,.1f}, cuando el mínimo previo "
+                 f"era S/ {minimo:,.1f} y lo habitual S/ {mediana:,.1f}. Regla: bajar del mínimo de {n} días "
+                 f"en al menos {margen * 100:.0f}%.")
+        return Evaluacion(valor, mediana, minimo, maximo, n, True, regla, 1 - valor / max(minimo, 1))
+    regla = (f"Dentro de lo visto a las {hora} en {semanas} semanas (entre S/ {minimo:,.1f} y S/ {maximo:,.1f}; "
+             f"lo habitual, S/ {mediana:,.1f}).")
+    return Evaluacion(valor, mediana, minimo, maximo, n, False, regla)
 
 
 def salto_brusco(valor, anterior, cfg=None):
@@ -102,6 +109,6 @@ def rarezas_de_semana(serie_semana: pd.DataFrame, historia: pd.Series, maximo=5)
         ev = evaluar(fila["valor"], fila["fecha_hora"], historia, cfg)
         if ev.es_rara:
             encontradas.append({"fecha_hora": fila["fecha_hora"], "valor": ev.valor, "mediana": ev.mediana,
-                                "z": ev.z, "n": ev.n, "regla": ev.regla})
-    encontradas.sort(key=lambda e: -abs(e["z"]))
+                                "intensidad": ev.intensidad, "n": ev.n, "regla": ev.regla})
+    encontradas.sort(key=lambda e: -e["intensidad"])
     return encontradas[:maximo], len(encontradas)

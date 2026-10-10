@@ -18,6 +18,8 @@ TABLAS = {
     "demanda": (tablas.tabla_demanda, 48, 0, 20000, ()),
     "generacion": (tablas.tabla_generacion, 48, -5, 15000, ()),
     "costo_marginal": (tablas.tabla_costo_marginal, 48, 0, 10000, ("cmg_congestion",)),
+    # El preliminar trae ~35 de 48 intervalos por diseno del COES: no se avisa por faltantes
+    "cmg_preliminar": (tablas.tabla_cmg_preliminar, None, 0, 10000, ("cmg_congestion",)),
     "embalses": (tablas.tabla_embalses, None, 0, None, ()),
     "centrales": (tablas.tabla_centrales, 48, -5, 1500, ()),
 }

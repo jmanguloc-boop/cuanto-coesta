@@ -138,3 +138,50 @@ def comparar_embalses(actual: pd.Series, referencia: pd.Series):
         return None, None
     a, r = actual[comunes].sum(), referencia[comunes].sum()
     return (a / r - 1 if r else None), r
+
+
+# ---------- mapa: costo marginal por barra ----------
+
+def coordenadas_barras():
+    """Latitud y longitud de las barras (assets/mapas/barras_coordenadas.csv, tomado del mapa del COES)."""
+    from src.utils.estilo import DIR_MAPAS
+    ruta = DIR_MAPAS / "barras_coordenadas.csv"
+    if not ruta.exists():
+        return pd.DataFrame(columns=["barra", "latitud", "longitud"])
+    return pd.read_csv(ruta)
+
+
+def cmg_por_barra(cmg: pd.DataFrame) -> pd.DataFrame:
+    """Promedio semanal del CMg total por barra, con coordenadas cuando se conocen."""
+    if cmg.empty:
+        return pd.DataFrame(columns=["barra", "cmg_promedio", "latitud", "longitud"])
+    total = cmg[cmg["variable"] == "cmg_total"]
+    prom = total.groupby("entidad", as_index=False)["valor"].mean().rename(
+        columns={"entidad": "barra", "valor": "cmg_promedio"})
+    return prom.merge(coordenadas_barras(), on="barra", how="left").sort_values("cmg_promedio")
+
+
+# ---------- preliminar vs revisado ----------
+
+def revision_preliminar(preliminar: pd.DataFrame, revisado: pd.DataFrame, barra: str) -> dict:
+    """Cuanto cambio el CMg entre lo publicado en tiempo real y la version post operacion del IEOD."""
+    if preliminar.empty or revisado.empty:
+        return {}
+    p = preliminar[(preliminar["entidad"] == barra) & (preliminar["variable"] == "cmg_total")][["fecha_hora", "valor"]]
+    r = revisado[(revisado["entidad"] == barra) & (revisado["variable"] == "cmg_total")
+                 & (revisado["fuente"] == "ieod_cmg")][["fecha_hora", "valor"]]
+    unido = p.merge(r, on="fecha_hora", suffixes=("_preliminar", "_revisado"))
+    if unido.empty:
+        return {}
+    dif = unido["valor_revisado"] - unido["valor_preliminar"]
+    # Diferencia media sobre precio medio: evita que S/ 50 sobre un precio de S/ 90 pese como 55 %
+    rel = dif.abs().mean() / max(unido["valor_revisado"].abs().mean(), 1)
+    imax = dif.abs().idxmax()
+    return {
+        "intervalos": len(unido),
+        "diferencia_media_abs": float(dif.abs().mean()),
+        "diferencia_media_pct": float(rel),
+        "max_abs": float(dif.abs().max()),
+        "momento_max": unido.loc[imax, "fecha_hora"],
+        "cambiados": int((dif.abs() > 0.5).sum()),
+    }

@@ -47,11 +47,11 @@ TITULARES = {
         "Baja la reserva de agua: los embalses cayeron {var}",
     ],
     ("record", "max"): [
-        "{nombre}: el más alto de las últimas {semanas} semanas",
+        "{nombre}: récord de las últimas {semanas} semanas",
         "Récord del periodo: {nombre} en su punto más alto en {semanas} semanas",
     ],
     ("record", "min"): [
-        "{nombre}: el más bajo de las últimas {semanas} semanas",
+        "{nombre}: mínimo de las últimas {semanas} semanas",
         "Récord del periodo: {nombre} en su punto más bajo en {semanas} semanas",
     ],
     ("anomalia", "sube"): [
@@ -61,6 +61,10 @@ TITULARES = {
     ("anomalia", "baja"): [
         "El {dia} la electricidad salió mucho más barata que el resto de la semana",
         "Un día barato: el {dia} el precio promedio bajó a {valor}",
+    ],
+    ("rareza",): [
+        "{n} medias horas con precios raros para su hora; la más llamativa, el {momento}",
+        "Precio fuera de lo habitual: {valor} el {momento}, cuando lo normal es {mediana}",
     ],
     ("dato", "demanda_maxima"): [
         "El mayor consumo de la semana fue el {momento}: {valor}",

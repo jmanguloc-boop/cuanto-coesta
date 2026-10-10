@@ -62,7 +62,8 @@ def historia_plana(valor=200.0, dias=20, hora="10:00"):
 def test_rareza_detecta_valor_inusual_para_su_hora():
     historia = historia_plana()
     ev = evaluar(800.0, "2026-09-25 10:00", historia)
-    assert ev.es_rara and "por encima" in ev.regla
+    assert ev.es_rara and "más alto" in ev.regla
+    assert evaluar(20.0, "2026-09-25 10:00", historia).es_rara   # rompe el minimo
     assert not evaluar(205.0, "2026-09-25 10:00", historia).es_rara
 
 

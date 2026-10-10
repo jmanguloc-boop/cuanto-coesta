@@ -152,6 +152,15 @@ def tabla_costo_marginal(desde, hasta, raiz=None):
     return df.reset_index(drop=True)
 
 
+def tabla_cmg_preliminar(desde, hasta, raiz=None):
+    """CMg en tiempo real tal como se publico (preliminar), para compararlo con el IEOD."""
+    partes = [armar(leer_cmg_tr(r), "S/ por MWh", "portal_cmg_tiempo_real", True)
+              for r in archivos_del_rango("costo_marginal_tr", desde, hasta, raiz)]
+    if not partes:
+        return pd.DataFrame()
+    return recortar(pd.concat(partes), desde, hasta)
+
+
 # ---------- embalses (IEOD, hoja PRINCIP_VOLUMENES) ----------
 
 def _hoja(ruta, prefijo):

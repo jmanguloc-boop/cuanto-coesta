@@ -8,6 +8,7 @@ import pandas as pd
 from src.analysis import indicadores as ind
 from src.analysis.hechos import top_hechos
 from src.analysis.modelo import Indicador, ResumenSemanal
+from src.analysis.rarezas import historial_barra, rarezas_de_semana
 from src.utils import config
 from src.utils.datos import leer_tabla, semanas_disponibles
 from src.utils.fechas import misma_semana_anio_anterior, rango_semana, semana_anterior, texto_semana
@@ -127,6 +128,12 @@ def calcular_resumen(semana, raiz=None) -> ResumenSemanal:
         detalle_emb["cuenca"] = detalle_emb["entidad"].map(cuencas)
 
     historico = _historico(semana, raiz)
+    barra = config.cargar_yaml("analisis")["barra_referencia"]
+    cmg_completo = leer_tabla("costo_marginal", semana, raiz)
+    rarezas, n_rarezas = rarezas_de_semana(cmg, historial_barra(barra, raiz=raiz)) if not cmg.empty else ([], 0)
+    revision = ind.revision_preliminar(leer_tabla("cmg_preliminar", semana, raiz), cmg_completo, barra)
+    if revision:
+        indicadores["revision_cmg"] = Indicador("revision_cmg", revision["diferencia_media_pct"], "%")
     tablas_prelim = [leer_tabla(t, semana, raiz) for t in ("demanda", "generacion", "costo_marginal")]
     es_prelim = dias < 7 or any(not t.empty and t["es_preliminar"].any() for t in tablas_prelim)
     ruta_avisos = Path(raiz or config.DIR_PROCESSED) / "avisos" / f"avisos_{semana}.json"
@@ -138,7 +145,8 @@ def calcular_resumen(semana, raiz=None) -> ResumenSemanal:
         es_preliminar=es_prelim, dias_con_datos=dias,
         barra_referencia=config.cargar_yaml("analisis")["barra_referencia"], umbrales_precio=umbrales,
         indicadores=indicadores, mix=actual["_mix"], mix_anterior=ant["_mix"],
-        hechos=top_hechos(indicadores, actual["_mix"], historico, cmg),
+        hechos=top_hechos(indicadores, actual["_mix"], historico, cmg, rarezas, n_rarezas),
         avisos=avisos, perfil_cmg=perfil, serie_cmg=cmg, serie_demanda=dem, serie_generacion=gen,
         serie_embalses=ind.serie_embalses(emb), embalses_detalle=detalle_emb, historico=historico,
+        rarezas=rarezas, n_rarezas=n_rarezas, cmg_barras=ind.cmg_por_barra(cmg_completo), revision=revision,
     )

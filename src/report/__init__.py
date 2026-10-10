@@ -226,14 +226,14 @@ def _glosario_y_metodologia(pdf, r):
         + " ".join(pdf.proyecto["aviso"].split()), tam=8.5)
     pdf.titulo_seccion("Glosario")
     glosario = config.glosario()
-    pdf.set_font(FUENTE, "", 7.6)
+    pdf.set_font(FUENTE, "", 7.0)
     pdf.color_texto("texto")
     with pdf.text_columns(ncols=2, gutter=6, text_align="L", line_height=1.1) as cols:
         for grupo in ("indicadores", "terminos"):
             for entrada in glosario[grupo].values():
-                pdf.set_font(FUENTE, "B", 7.6)
+                pdf.set_font(FUENTE, "B", 7.0)
                 cols.write(entrada["nombre"] + ". ")
-                pdf.set_font(FUENTE, "", 7.6)
+                pdf.set_font(FUENTE, "", 7.0)
                 cols.write(" ".join(entrada["explicacion_simple"].split()))
                 cols.ln()
                 cols.ln()
