@@ -1,0 +1,36 @@
+# Identidad del proyecto. Para renombrar, cambiar solo estas 3 lineas.
+nombre: "Cuánto COESta"
+slug: "cuanto-coesta"
+tagline: "El sistema eléctrico peruano, explicado al toque"
+
+repositorio: ""   # se completa al crear el repo en GitHub
+
+aviso: >
+  Proyecto independiente, no afiliado al COES. Usa datos públicos del portal
+  www.coes.org.pe, que pueden ser preliminares y cambiar después.
+
+# Paleta unica para dashboard y PDF
+paleta:
+  primario: "#0B3C5D"
+  secundario: "#328CC1"
+  acento: "#F28E2B"
+  fondo: "#FFFFFF"
+  fondo_suave: "#F3F6F9"
+  texto: "#1D2731"
+  texto_suave: "#5B6770"
+  sube: "#C0392B"
+  baja: "#1E8449"
+
+# Un color fijo por tecnologia en todos los graficos
+tecnologias:
+  hidro:    {nombre: "Hidroeléctrica", color: "#1F77B4"}
+  gas:      {nombre: "Gas natural",    color: "#F28E2B"}
+  solar:    {nombre: "Solar",          color: "#F2C80F"}
+  eolica:   {nombre: "Eólica",         color: "#2EC4B6"}
+  diesel:   {nombre: "Diésel y residual", color: "#3D3D3D"}
+  carbon:   {nombre: "Carbón",         color: "#7B4B2A"}
+  biomasa:  {nombre: "Biomasa",        color: "#4C9A2A"}
+  otros:    {nombre: "Otros",          color: "#BDBDBD"}
+
+# Orden de apilado en graficos (de base a tope)
+orden_tecnologias: [hidro, gas, eolica, solar, biomasa, carbon, diesel, otros]

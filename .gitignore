@@ -1,7 +1,11 @@
 .venv/
+venv/
 __pycache__/
 *.pyc
 .pytest_cache/
-data/*
-!data/muestras/
-!data/muestras/**
+.env
+*.zip
+data/raw/
+data/processed/
+reports/*.pdf
+!reports/.gitkeep

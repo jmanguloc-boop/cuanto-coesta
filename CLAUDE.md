@@ -1,41 +1,45 @@
-# Pulso Electrico Peru
+# Cuanto COESta (slug: cuanto-coesta)
 
-Bot open source que descarga data publica del COES (coes.org.pe), la procesa
-y genera cada semana:
-1. Un dashboard en Streamlit (producto principal)
-2. Un PDF semanal descargable
+El nombre, slug y tagline viven en config/proyecto.yaml. Nunca hardcodearlos.
 
-Publico objetivo: cualquier persona, desde analistas del sector energetico
-hasta alguien sin conocimiento tecnico. Todo indicador debe tener una
-explicacion en lenguaje simple.
+Bot open source en Python que descarga data publica del COES (coes.org.pe), la
+limpia, calcula indicadores semanales y genera:
+1. Dashboard Streamlit (producto principal) con explicaciones al pasar el mouse
+2. PDF semanal con cajitas "Que significa esto" y glosario
 
-Reglas del proyecto:
-- Solo data publica del COES y fuentes publicas. Nada de data privada
-- Python 3.11+. Nada de HTML escrito a mano
-- Codigo, nombres de variables y comentarios sin tildes ni caracteres especiales
-- Preferir requests/descarga directa de archivos. Usar Playwright solo si
-  la pagina no expone los archivos de otra forma
-- Respetar robots.txt y no saturar el servidor (pausas entre descargas, cache)
-- Todo explicativo vive en config/glosario.yaml (fuente unica de verdad)
-- Al terminar cada fase, actualizar PROGRESO.md con: que se hizo, que falta,
-  decisiones tomadas y problemas encontrados
+Publico: desde analistas del sector hasta alguien que no sabe nada de
+electricidad. Si un dato no se entiende sin contexto, esta mal hecho.
 
-Estructura:
-src/extract/   descargadores por fuente
-src/transform/ limpieza y normalizacion
-src/analysis/  calculo de indicadores
-src/narrative/ textos automaticos
-src/report/    generacion del PDF
-app/           dashboard Streamlit
-config/        glosario.yaml, fuentes.yaml
-data/raw, data/processed (data/ en .gitignore salvo muestras)
-docs/          documentacion de fuentes
-tests/
+## Reglas
+- Python 3.11+. Rutas con pathlib. Logging con `logging` (src/utils/logs.py)
+- Codigo, variables, funciones, archivos y comentarios SIN tildes ni enie. Los
+  textos visibles (dashboard, PDF, glosario) si llevan tildes
+- Nunca usar guion largo (em dash) en textos visibles
+- Nada de HTML escrito a mano ni HTML a PDF
+- Solo data publica. Pausa >= 2 s entre descargas, cache, nunca bajar dos veces lo mismo
+- requests primero; Playwright solo si no hay otra forma
+- Todo texto explicativo vive en config/glosario.yaml (fuente unica de verdad)
+- Una paleta y un color por tecnologia: config/proyecto.yaml
+- Numeros: 12,345.6 ; porcentajes max 1 decimal ; fechas legibles en espanol
+- Titulos de graficos que digan la conclusion
+- Aviso de no afiliacion al COES en dashboard, PDF y README
+- Sin APIs de IA: la narrativa es por plantillas y reglas
+- Al cerrar cada bloque: tests, PROGRESO.md, commit "Bloque N: ..."
 
-Comandos:
-- Entorno: `python -m venv .venv` y `.venv\Scripts\pip install -r requirements.txt`
-- Descargar la ultima semana completa: `.venv\Scripts\python -m src.extract.run`
-- Rango especifico: `.venv\Scripts\python -m src.extract.run --desde 2026-10-01 --hasta 2026-10-07`
-- Tests: `.venv\Scripts\python -m pytest -q`
+## Estructura
+- src/extract/    un descargador por fuente + CLI (`python -m src.extract`)
+- src/transform/  crudo -> parquet largo en data/processed (`python -m src.transform`)
+- src/analysis/   indicadores -> ResumenSemanal (`python -m src.analysis`)
+- src/narrative/  titulares y parrafos por reglas
+- src/report/     PDF con fpdf2 + matplotlib (`python -m src.report`)
+- src/utils/      config, logging, fechas, formato
+- app/streamlit_app.py   dashboard
+- run_weekly.py   pipeline completo
+- docs/fuentes_coes.md, docs/diccionario_datos.md
 
-Detalles de las fuentes (endpoints, formatos, trampas conocidas): docs/fuentes_coes.md
+## Comandos (Windows)
+- `.venv\Scripts\python -m pytest -q`
+- `.venv\Scripts\python run_weekly.py [--semana 2026-W40]`
+- `.venv\Scripts\streamlit run app/streamlit_app.py`
+
+Estado y decisiones: PROGRESO.md
