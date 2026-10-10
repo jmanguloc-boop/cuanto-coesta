@@ -9,28 +9,49 @@ aviso: >
   Proyecto independiente, no afiliado al COES. Usa datos públicos del portal
   www.coes.org.pe, que pueden ser preliminares y cambiar después.
 
-# Paleta unica para dashboard y PDF
+# Identidad editorial: "periodismo de datos industrial".
+# Papel calido, carbon, verde profundo y lima electrica. El oscuro se reserva
+# para los instrumentos (precio en vivo, curvas), no para toda la pantalla.
 paleta:
-  primario: "#0B3C5D"
-  secundario: "#328CC1"
-  acento: "#F28E2B"
-  fondo: "#FFFFFF"
-  fondo_suave: "#F3F6F9"
-  texto: "#1D2731"
-  texto_suave: "#5B6770"
-  sube: "#C0392B"
-  baja: "#1E8449"
+  # Claves editoriales
+  tinta: "#171916"        # carbon: texto y bloques oscuros
+  papel: "#F1F0E8"        # fondo general
+  blanco: "#FBFAF5"       # paneles
+  lima: "#D5FF42"         # acento electrico (resaltar, nunca para texto sobre papel)
+  verde: "#315D45"        # verde profundo: titulares de seccion, series principales
+  gris: "#77796F"         # texto secundario, etiquetas
+  linea: "#CBCFC2"        # reglas y bordes
+  cobre: "#E46F3D"        # alertas y marcas puntuales
+  mineral: "#43483F"      # grafito para lineas sobre fondo oscuro
+  # Claves funcionales (las usan dashboard web, PDF y tests)
+  primario: "#171916"
+  secundario: "#315D45"
+  acento: "#E46F3D"
+  fondo: "#F1F0E8"
+  fondo_suave: "#FBFAF5"
+  texto: "#171916"
+  texto_suave: "#77796F"
+  sube: "#B5452A"         # cambio desfavorable
+  baja: "#315D45"         # cambio favorable
 
-# Un color fijo por tecnologia en todos los graficos
+# Tipografia (archivos en assets/fuentes, licencia OFL). Si no cargan, se usan
+# alternativas del sistema (ver src/utils/estilo.py).
+tipografia:
+  titulares: "Barlow Condensed"   # cifras y titulares, en mayusculas
+  texto: "Barlow"
+  mono: "IBM Plex Mono"           # etiquetas, metadatos, fechas
+
+# Un color fijo por tecnologia en todos los graficos (tonos editoriales)
 tecnologias:
-  hidro:    {nombre: "Hidroeléctrica", color: "#1F77B4"}
-  gas:      {nombre: "Gas natural",    color: "#F28E2B"}
-  solar:    {nombre: "Solar",          color: "#F2C80F"}
-  eolica:   {nombre: "Eólica",         color: "#2EC4B6"}
-  diesel:   {nombre: "Diésel y residual", color: "#3D3D3D"}
-  carbon:   {nombre: "Carbón",         color: "#7B4B2A"}
-  biomasa:  {nombre: "Biomasa",        color: "#4C9A2A"}
-  otros:    {nombre: "Otros",          color: "#BDBDBD"}
+  hidro:    {nombre: "Hidroeléctrica",    color: "#4A7A96"}
+  gas:      {nombre: "Gas natural",       color: "#C98A3C"}
+  solar:    {nombre: "Solar",             color: "#E3B505"}
+  eolica:   {nombre: "Eólica",            color: "#5AA595"}
+  diesel:   {nombre: "Diésel y residual", color: "#3A3D36"}
+  carbon:   {nombre: "Carbón",            color: "#7A5235"}
+  biomasa:  {nombre: "Biomasa",           color: "#6F8F3A"}
+  termica:  {nombre: "Térmica",           color: "#C98A3C"}
+  otros:    {nombre: "Otros",             color: "#B9BBB0"}
 
 # Orden de apilado en graficos (de base a tope)
 orden_tecnologias: [hidro, gas, eolica, solar, biomasa, carbon, diesel, otros]

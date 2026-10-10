@@ -8,6 +8,7 @@ from datetime import date
 
 from src.extract import DESCARGADORES
 from src.extract.cliente import ClienteCoes
+from src.utils import estado
 from src.utils.fechas import rango_semana, ultima_semana_completa
 from src.utils.logs import configurar_logging, obtener_logger
 
@@ -22,9 +23,11 @@ def descargar_todo(desde, hasta, fuentes=None, forzar=False, cliente=None):
         log.info("Descargando %s de %s a %s", nombre, desde, hasta)
         try:
             resultado[nombre] = DESCARGADORES[nombre](desde, hasta, cliente=cliente, forzar=forzar)
+            estado.registrar(nombre, True, f"{desde} a {hasta}: {len(resultado[nombre])} archivos")
         except Exception as error:  # una fuente caida no debe tumbar a las demas
             log.error("Fallo %s: %s", nombre, error)
             errores[nombre] = str(error)
+            estado.registrar(nombre, False, str(error))
     return resultado, errores
 
 

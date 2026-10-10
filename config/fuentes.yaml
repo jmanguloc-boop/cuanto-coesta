@@ -1,8 +1,16 @@
 # Fuentes publicas del COES. Detalle y hallazgos en docs/fuentes_coes.md
 # Fechas en los parametros del portal: dd/mm/aaaa
+#
+# Campos descriptivos de cada fuente (se muestran en la pantalla "Metodo y fuentes"):
+#   frecuencia_objetivo  cada cuanto tiene sentido consultarla
+#   retraso_esperado     cuanto tarda el COES en publicar un dato nuevo
+#   estado_dato          preliminar (puede cambiar) o post_operacion (evaluado por el COES)
+#   url_fuente           pagina publica donde cualquiera puede verificar el dato
+# La "ultima extraccion exitosa" no va aqui (cambia en cada corrida): se guarda en
+# data/estado_fuentes.json y se muestra en la app.
 
 cliente:
-  user_agent: "CuantoCOESta/0.2 (bot open source; data publica COES)"
+  user_agent: "CuantoCOESta/0.3 (bot open source; data publica COES)"
   pausa_segundos: 2.0        # espera minima entre dos pedidos al servidor
   timeout_segundos: 180
   reintentos: 3
@@ -13,10 +21,18 @@ cliente:
 
 portal: "https://www.coes.org.pe/Portal"
 
+# ---------------------------------------------------------------------------
+# Ciclo semanal (run_weekly.py)
+# ---------------------------------------------------------------------------
 fuentes:
   demanda:
     mvp: true
+    ciclo: semanal
     descripcion: "Demanda del SEIN cada 30 min: ejecutada, programa diario y semanal (MW)"
+    frecuencia_objetivo: "semanal"
+    retraso_esperado: "minutos"
+    estado_dato: preliminar
+    url_fuente: "https://www.coes.org.pe/Portal/portalinformacion/demanda"
     pagina: "/portalinformacion/demanda"
     url: "/portalinformacion/ExportarDemanda"
     metodo: GET
@@ -26,7 +42,12 @@ fuentes:
 
   generacion:
     mvp: true
+    ciclo: semanal
     descripcion: "Produccion por tipo de recurso y por central cada 30 min (MW)"
+    frecuencia_objetivo: "semanal"
+    retraso_esperado: "horas"
+    estado_dato: preliminar
+    url_fuente: "https://www.coes.org.pe/Portal/portalinformacion/generacion"
     pagina: "/portalinformacion/generacion"
     url: "/portalinformacion/Generacion"
     metodo: POST
@@ -36,7 +57,12 @@ fuentes:
 
   costo_marginal:
     mvp: true
+    ciclo: semanal
     descripcion: "Costo marginal de corto plazo por barra cada 30 min (S/ por MWh), version post operacion del IEOD"
+    frecuencia_objetivo: "semanal"
+    retraso_esperado: "1 a 2 días"
+    estado_dato: post_operacion
+    url_fuente: "https://www.coes.org.pe/Portal/PostOperacion/Reportes/Ieod"
     pagina: "/PostOperacion/Reportes/Ieod"
     url: "/browser/download"
     metodo: IEOD_ZIP
@@ -49,8 +75,13 @@ fuentes:
 
   costo_marginal_tr:
     mvp: true
+    ciclo: semanal
     respaldo_de: costo_marginal
-    descripcion: "Costo marginal en tiempo real (barras >= 138 kV). Incompleto: ~35 de 48 intervalos por dia"
+    descripcion: "Costo marginal en tiempo real (barras >= 138 kV). Se usa como respaldo y para medir cuanto cambia el dato preliminar"
+    frecuencia_objetivo: "semanal"
+    retraso_esperado: "30 minutos"
+    estado_dato: preliminar
+    url_fuente: "https://www.coes.org.pe/Portal/mercadomayorista/costosmarginales"
     pagina: "/mercadomayorista/costosmarginales"
     url: "/mercadomayorista/costosmarginales/ExportarMasivo"
     metodo: GET
@@ -60,13 +91,44 @@ fuentes:
 
   ieod_anexo:
     mvp: true
+    ciclo: semanal
     descripcion: "Anexo A del Informe de Evaluacion de la Operacion Diaria: 46 hojas (embalses, caudales, eventos, mantenimientos)"
+    frecuencia_objetivo: "semanal"
+    retraso_esperado: "1 a 2 días"
+    estado_dato: post_operacion
+    url_fuente: "https://www.coes.org.pe/Portal/PostOperacion/Reportes/Ieod"
     pagina: "/PostOperacion/Reportes/Ieod"
     url: "/browser/download"
     metodo: IEOD
     formato: xlsx
     ruta_ieod: "Post Operación/Reportes/IEOD/{anio}/{mes_carpeta}/{dia}/AnexoA_{ddmm}.xlsx"
     max_dias_por_pedido: 1
+
+# ---------------------------------------------------------------------------
+# Ciclo frecuente: "Cuanto COESta Ahora" (python -m src.ahora)
+# Solo lo que el COES publica de verdad cada media hora. Si no hay dato nuevo,
+# se conserva el ultimo y se muestra su antiguedad: nunca se inventa una actualizacion.
+# ---------------------------------------------------------------------------
+ahora:
+  cada_minutos: 30
+  costo_marginal:
+    descripcion: "Costo marginal en tiempo real por barra (>= 138 kV), un proceso cada 30 min"
+    frecuencia_objetivo: "30 minutos"
+    retraso_esperado: "~30 minutos"
+    estado_dato: preliminar
+    url_fuente: "https://www.coes.org.pe/Portal/mercadomayorista/costosmarginales"
+    url_procesos: "/mercadomayorista/costosmarginales/listaproceso"   # POST fecha -> procesos del dia
+    url_lista: "/mercadomayorista/costosmarginales/lista"             # POST correlativo -> tabla de barras
+    defecto: "S"
+    # Procesos recientes que se vuelven a consultar para detectar revisiones del COES
+    revisar_ultimos: 2
+  demanda:
+    descripcion: "Demanda ejecutada del SEIN y programa del dia, cada 30 min"
+    frecuencia_objetivo: "30 minutos"
+    retraso_esperado: "~1 minuto"
+    estado_dato: preliminar
+    url_fuente: "https://www.coes.org.pe/Portal/portalinformacion/demanda"
+    url: "/portalinformacion/Demanda"                                  # POST fechaInicial, fechaFinal -> JSON
 
 # Carpetas de mes del IEOD (ojo: "Setiembre", no "Septiembre")
 meses_ieod: [Enero, Febrero, Marzo, Abril, Mayo, Junio, Julio, Agosto, Setiembre, Octubre, Noviembre, Diciembre]
