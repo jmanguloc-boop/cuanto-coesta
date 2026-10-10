@@ -32,27 +32,33 @@ def elegir(opciones, *semilla):
 
 
 def soles(v):
+    """Monto en soles por MWh."""
     return f"S/ {numero(v, 1)} por MWh"
 
 
 def pct(v):
+    """Valor absoluto en porcentaje."""
     return f"{abs(v) * 100:.1f}%"
 
 
 def pp(v):
+    """Valor absoluto en puntos porcentuales."""
     return f"{abs(v) * 100:.1f} puntos"
 
 
 def dia_texto(fecha):
+    """Dia legible: jueves 2 de octubre."""
     return f"{DIAS[fecha.weekday()]} {fecha.day} de {MESES[fecha.month - 1]}"
 
 
 def hora_texto(hora):
+    """Hora legible: 7 p. m."""
     sufijo = "a. m." if hora < 12 else "p. m."
     return f"{hora % 12 or 12} {sufijo}"
 
 
 def nombre_tec(clave):
+    """Nombre visible de una tecnologia."""
     return config.nombre_tecnologia(clave)
 
 
@@ -64,14 +70,17 @@ def nombre_tec_min(clave):
 
 
 def capitalizar(texto):
+    """Primera letra en mayuscula."""
     return texto[:1].upper() + texto[1:]
 
 
 def sube_baja(v, sube="subió", baja="bajó"):
+    """Palabra segun el signo de v."""
     return sube if v > 0 else baja
 
 
 def horas(v):
+    """Horas sin decimal si es entero."""
     return numero(v) if float(v).is_integer() else numero(v, 1)
 
 
@@ -132,6 +141,7 @@ def _valor_ind(ind):
 
 
 def titulares(r):
+    """Un titular por hecho destacado."""
     return [pulir(_titular(h, r)) for h in r.hechos]
 
 
@@ -155,6 +165,7 @@ def _cambio_hidro(r):
 
 
 def parrafo_precios(r):
+    """Parrafo de la seccion de precios."""
     prom, maxi, mini = r.ind("cmg_promedio"), r.ind("cmg_maximo"), r.ind("cmg_minimo")
     if prom is None or prom.valor is None:
         return "Esta semana no hay datos de precios disponibles."
@@ -181,6 +192,7 @@ def parrafo_precios(r):
 
 
 def parrafo_demanda(r):
+    """Parrafo de la seccion de demanda."""
     ene, pico, err = r.ind("energia_semana"), r.ind("demanda_maxima"), r.ind("error_programa_diario")
     if ene is None or ene.valor is None:
         return "Esta semana no hay datos de demanda disponibles."
@@ -204,6 +216,7 @@ def parrafo_demanda(r):
 
 
 def parrafo_generacion(r):
+    """Parrafo de la seccion de generacion."""
     if not r.mix:
         return "Esta semana no hay datos de generación disponibles."
     lider = max(r.mix, key=r.mix.get)
@@ -233,6 +246,7 @@ def parrafo_generacion(r):
 
 
 def parrafo_hidrologia(r):
+    """Parrafo de la seccion de hidrologia."""
     vol = r.ind("volumen_embalses")
     if vol is None or vol.valor is None:
         return "Esta semana no hay datos de embalses disponibles."
@@ -259,6 +273,7 @@ def parrafo_hidrologia(r):
 # ---------- titulos de graficos (dicen la conclusion) ----------
 
 def titulos_graficos(r):
+    """Titulos que dicen la conclusion de cada grafico."""
     t = {}
     if not r.perfil_cmg.empty and r.perfil_cmg["actual"].notna().any():
         hora = int(r.perfil_cmg.loc[r.perfil_cmg["actual"].idxmax(), "hora"])
@@ -284,6 +299,7 @@ def titulos_graficos(r):
 
 
 def generar_narrativa(r) -> Narrativa:
+    """Titulares, parrafos y titulos de graficos de la semana."""
     return Narrativa(
         titulares=titulares(r),
         parrafos={

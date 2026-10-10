@@ -11,6 +11,7 @@ ES_PUNTOS = {"participacion_renovable"}
 
 
 def hechos_por_variacion(indicadores):
+    """Indicadores que cambiaron mas que su umbral de relevancia."""
     relevancia = config.cargar_yaml("analisis")["relevancia"]
     hechos = []
     for clave, umbral in relevancia.items():
@@ -88,6 +89,7 @@ def hechos_de_respaldo(indicadores, mix):
 
 
 def top_hechos(indicadores, mix, historico, serie_cmg, n=3):
+    """Los n hechos mas relevantes, uno por indicador."""
     candidatos = (hechos_por_record(indicadores, historico) + hechos_por_variacion(indicadores)
                   + hechos_por_anomalia(serie_cmg) + hechos_de_respaldo(indicadores, mix))
     elegidos, usados = [], set()

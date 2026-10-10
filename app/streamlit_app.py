@@ -15,7 +15,7 @@ from src.analysis import calcular_resumen  # noqa: E402
 from src.narrative import generar_narrativa  # noqa: E402
 from src.utils import config  # noqa: E402
 from src.utils.datos import ruta_tabla, semanas_disponibles  # noqa: E402
-from src.utils.fechas import HORA_PERU, dia_y_hora, texto_semana  # noqa: E402
+from src.utils.fechas import HORA_PERU, dia_y_hora, texto_semana, ultima_semana_completa  # noqa: E402
 from src.utils.formato import numero, porcentaje  # noqa: E402
 
 PROYECTO = config.proyecto()
@@ -28,12 +28,14 @@ st.set_page_config(page_title=PROYECTO["nombre"], page_icon="⚡", layout="wide"
 
 @st.cache_data(ttl=3600, show_spinner="Calculando la semana...")
 def cargar(semana):
+    """Resumen y narrativa de la semana (cacheado)."""
     resumen = calcular_resumen(semana)
     return resumen, generar_narrativa(resumen)
 
 
 @st.cache_data(ttl=600)
 def semanas():
+    """Semanas con las tablas base disponibles."""
     # Solo semanas con las tablas base completas para analizar
     return [s for s in semanas_disponibles("demanda")
             if ruta_tabla("costo_marginal", s).exists() and ruta_tabla("generacion", s).exists()]
@@ -46,6 +48,7 @@ def ayuda(clave):
 
 
 def que_significa(*claves):
+    """Expander con las explicaciones del glosario."""
     with st.expander("¿Qué significa esto?"):
         for clave in claves:
             g = GLOSARIO["indicadores"].get(clave) or GLOSARIO["terminos"][clave]
@@ -56,6 +59,7 @@ def que_significa(*claves):
 
 
 def delta(ind, puntos=False):
+    """Texto de variacion para st.metric."""
     if ind is None or ind.var_anterior is None:
         return None
     if puntos:
@@ -64,15 +68,18 @@ def delta(ind, puntos=False):
 
 
 def metrica(col, ind, etiqueta_valor, clave, puntos=False, invertir=False):
+    """st.metric con nombre y ayuda tomados del glosario."""
     col.metric(GLOSARIO["indicadores"][clave]["nombre"], etiqueta_valor, delta(ind, puntos),
                delta_color="inverse" if invertir else "normal", help=ayuda(clave))
 
 
 def soles(v):
+    """Monto en soles o s/d."""
     return "s/d" if v is None else f"S/ {numero(v, 1)}"
 
 
 def grafico(fig):
+    """Muestra un grafico Plotly a todo el ancho."""
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False, "locale": "es"})
 
 
@@ -87,7 +94,10 @@ if not lista:
 col_titulo, col_semana = st.columns([3, 2])
 col_titulo.title(f"⚡ {PROYECTO['nombre']}")
 col_titulo.caption(PROYECTO["tagline"])
-semana = col_semana.selectbox("Semana", options=lista[::-1], format_func=texto_semana)
+opciones = lista[::-1]
+# Por defecto la ultima semana completa; la semana en curso queda disponible como preliminar
+inicial = opciones.index(ultima_semana_completa()) if ultima_semana_completa() in opciones else 0
+semana = col_semana.selectbox("Semana", options=opciones, index=inicial, format_func=texto_semana)
 
 resumen, narrativa = cargar(semana)
 r, n = resumen, narrativa

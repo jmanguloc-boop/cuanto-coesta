@@ -10,6 +10,7 @@ from src.utils.logs import configurar_logging
 
 
 def main(argv=None):
+    """Punto de entrada de la linea de comandos."""
     parser = argparse.ArgumentParser(description="Genera los textos de una semana")
     parser.add_argument("--semana", default=None)
     args = parser.parse_args(argv)

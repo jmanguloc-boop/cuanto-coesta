@@ -57,6 +57,7 @@ def metricas_semana(semana, raiz=None) -> dict:
 
 
 def dias_completos(serie_dem) -> int:
+    """Dias con al menos 46 de 48 intervalos de demanda."""
     if serie_dem.empty:
         return 0
     conteo = serie_dem.groupby("fecha")["ejecutada"].count()
@@ -80,6 +81,7 @@ def _historico(semana, raiz=None, maximo=12):
 
 
 def calcular_resumen(semana, raiz=None) -> ResumenSemanal:
+    """Calcula indicadores, comparaciones y hechos de una semana."""
     desde, hasta = rango_semana(semana)
     sem_ant, sem_anio = semana_anterior(semana), misma_semana_anio_anterior(semana)
     cmg, dem, gen, emb = _datos_semana(semana, raiz)

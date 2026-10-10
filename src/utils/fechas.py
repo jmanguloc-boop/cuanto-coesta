@@ -13,14 +13,17 @@ DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "doming
 
 
 def ahora_peru():
+    """Fecha y hora actual en Peru."""
     return datetime.now(HORA_PERU)
 
 
 def hoy_peru():
+    """Fecha actual en Peru."""
     return ahora_peru().date()
 
 
 def semana_iso(fecha: date) -> str:
+    """Codigo ISO de semana (2026-W40) de una fecha."""
     anio, semana, _ = fecha.isocalendar()
     return f"{anio}-W{semana:02d}"
 
@@ -33,11 +36,13 @@ def rango_semana(codigo: str):
 
 
 def semana_anterior(codigo: str, semanas=1) -> str:
+    """Codigo de la semana n semanas antes."""
     lunes, _ = rango_semana(codigo)
     return semana_iso(lunes - timedelta(weeks=semanas))
 
 
 def misma_semana_anio_anterior(codigo: str) -> str:
+    """Misma semana ISO del anio anterior."""
     anio, semana = codigo.upper().split("-W")
     try:
         return semana_iso(date.fromisocalendar(int(anio) - 1, int(semana), 1))
@@ -46,11 +51,13 @@ def misma_semana_anio_anterior(codigo: str) -> str:
 
 
 def ultima_semana_completa(hoy: date = None) -> str:
+    """Ultima semana lunes a domingo ya terminada."""
     hoy = hoy or hoy_peru()
     return semana_iso(hoy - timedelta(days=hoy.weekday() + 7))
 
 
 def fecha_larga(fecha: date) -> str:
+    """Fecha legible: 4 de octubre de 2026."""
     return f"{fecha.day} de {MESES[fecha.month - 1]} de {fecha.year}"
 
 

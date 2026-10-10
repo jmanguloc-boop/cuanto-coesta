@@ -11,6 +11,7 @@ log = obtener_logger("src.report")
 
 
 def main(argv=None):
+    """Punto de entrada de la linea de comandos."""
     parser = argparse.ArgumentParser(description="Genera el PDF semanal")
     parser.add_argument("--semana", default=None)
     parser.add_argument("--png", action="store_true", help="exporta la portada a docs/capturas/")

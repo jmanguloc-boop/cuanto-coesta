@@ -6,4 +6,5 @@ NOMBRE = "demanda"
 
 
 def descargar(desde, hasta, cliente=None, raiz=None, forzar=False):
+    """Baja la demanda del SEIN para el rango."""
     return descargar_por_tramos(NOMBRE, desde, hasta, obtener_portal, cliente, raiz, forzar)

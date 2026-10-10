@@ -77,6 +77,7 @@ def armar(df, unidad, fuente, es_preliminar=False):
 
 
 def recortar(df, desde, hasta):
+    """Filas cuyo dia operativo cae en el rango."""
     return df[(df["fecha"] >= desde) & (df["fecha"] <= hasta)].reset_index(drop=True)
 
 
@@ -110,4 +111,5 @@ def validar(df, tabla, por_dia=48, minimo=None, maximo=None, sin_minimo=()):
 
 
 def sin_duplicados(df):
+    """Quita duplicados por fecha_hora, entidad y variable (queda el ultimo)."""
     return df.drop_duplicates(["fecha_hora", "entidad", "variable"], keep="last").reset_index(drop=True)

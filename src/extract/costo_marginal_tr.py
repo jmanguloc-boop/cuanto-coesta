@@ -6,4 +6,5 @@ NOMBRE = "costo_marginal_tr"
 
 
 def descargar(desde, hasta, cliente=None, raiz=None, forzar=False):
+    """Baja el costo marginal en tiempo real (respaldo)."""
     return descargar_por_tramos(NOMBRE, desde, hasta, obtener_portal, cliente, raiz, forzar)

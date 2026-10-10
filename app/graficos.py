@@ -3,7 +3,6 @@
 import pandas as pd
 import plotly.graph_objects as go
 
-from src.analysis.indicadores import hora_del_dia
 from src.utils import config
 from src.utils.fechas import dia_y_hora
 
@@ -34,7 +33,8 @@ def _eje_dias(fig, fechas):
     """Marcas del eje X en espanol: 'lun 28/9' a medianoche de cada dia."""
     dias = (pd.to_datetime(pd.Series(fechas)) - pd.Timedelta(minutes=1)).dt.normalize().drop_duplicates().sort_values()
     abrev = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
-    fig.update_xaxes(tickvals=list(dias), ticktext=[f"{abrev[d.weekday()]} {d.day}/{d.month}" for d in dias])
+    # Marca al mediodia: queda centrada en el dia y no se sale del rango (la serie arranca 00:30)
+    fig.update_xaxes(tickvals=list(dias + pd.Timedelta(hours=12)), ticktext=[f"{abrev[d.weekday()]} {d.day}/{d.month}" for d in dias])
     return fig
 
 
@@ -43,6 +43,7 @@ def _textos_momento(serie):
 
 
 def grafico_precio_semana(serie_cmg: pd.DataFrame, umbrales: dict, titulo: str):
+    """Costo marginal de la semana con lineas de precio alto y bajo."""
     p = _paleta()
     fig = go.Figure(go.Scatter(
         x=serie_cmg["fecha_hora"], y=serie_cmg["valor"], mode="lines",
@@ -59,6 +60,7 @@ def grafico_precio_semana(serie_cmg: pd.DataFrame, umbrales: dict, titulo: str):
 
 
 def grafico_perfil_horario(perfil: pd.DataFrame, titulo: str):
+    """Precio promedio por hora del dia, esta semana vs la anterior."""
     p = _paleta()
     fig = go.Figure()
     if perfil["anterior"].notna().any():
@@ -74,6 +76,7 @@ def grafico_perfil_horario(perfil: pd.DataFrame, titulo: str):
 
 
 def grafico_demanda(serie_dem: pd.DataFrame, titulo: str):
+    """Demanda real vs programada, con el pico marcado."""
     p = _paleta()
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -95,6 +98,7 @@ def grafico_demanda(serie_dem: pd.DataFrame, titulo: str):
 
 
 def grafico_generacion(serie_gen: pd.DataFrame, titulo: str):
+    """Generacion apilada por tecnologia cada 30 min."""
     proyecto = config.proyecto()
     fig = go.Figure()
     for tec in proyecto["orden_tecnologias"]:
@@ -112,7 +116,8 @@ def grafico_generacion(serie_gen: pd.DataFrame, titulo: str):
 
 
 def grafico_mix(mix: dict, mix_anterior: dict, titulo: str):
-    p = _paleta()
+    """Participacion de cada tecnologia, esta semana vs la anterior."""
+    _paleta()
     tecs = [t for t in sorted(mix, key=mix.get) if mix[t] >= 0.001]
     nombres = [config.nombre_tecnologia(t) for t in tecs]
     fig = go.Figure()
@@ -131,7 +136,8 @@ def grafico_mix(mix: dict, mix_anterior: dict, titulo: str):
 
 
 def grafico_embalses(serie_emb: pd.DataFrame, titulo: str):
-    p = _paleta()
+    """Volumen util total de los embalses al cierre de cada dia."""
+    _paleta()
     textos = [f"{d.day}/{d.month}" for d in serie_emb["fecha"]]
     fig = go.Figure(go.Scatter(
         x=textos, y=serie_emb["valor"], mode="lines+markers", line=dict(color=config.color_tecnologia("hidro"), width=2.5),
@@ -140,7 +146,8 @@ def grafico_embalses(serie_emb: pd.DataFrame, titulo: str):
 
 
 def grafico_embalses_detalle(detalle: pd.DataFrame, titulo: str, n=10):
-    p = _paleta()
+    """Los n embalses con mas agua, esta semana vs la anterior."""
+    _paleta()
     top = detalle.dropna(subset=["actual"]).nlargest(n, "actual").iloc[::-1]
     nombres = top["entidad"].str.title()
     fig = go.Figure()

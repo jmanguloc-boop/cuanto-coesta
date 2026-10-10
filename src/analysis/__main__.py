@@ -9,7 +9,14 @@ from src.utils.formato import numero, porcentaje, texto_variacion
 from src.utils.logs import configurar_logging
 
 
+def _var(v, es_puntos):
+    if v is None:
+        return "s/d"
+    return f"{v * 100:+.1f} pp" if es_puntos else texto_variacion(v)
+
+
 def texto_resumen(r) -> str:
+    """Resumen de varias lineas para la consola."""
     glosario = config.glosario()["indicadores"]
     lineas = [f"{config.proyecto()['nombre']}: {r.texto_semana} ({r.semana})"]
     if r.es_preliminar:
@@ -25,8 +32,7 @@ def texto_resumen(r) -> str:
             valor = porcentaje(i.valor)
         else:
             valor = f"{numero(i.valor, 1 if i.valor < 1000 else 0)} {i.unidad.replace('S/ por MWh', 'S/MWh')}"
-        fmt = lambda v: "s/d" if v is None else (f"{v * 100:+.1f} pp" if i.es_puntos else texto_variacion(v))
-        lineas.append(f"  {nombre:<34}{valor:>14}  {fmt(i.var_anterior):>12}  {fmt(i.var_anio):>12}")
+        lineas.append(f"  {nombre:<34}{valor:>14}  {_var(i.var_anterior, i.es_puntos):>12}  {_var(i.var_anio, i.es_puntos):>12}")
         if i.momento is not None:
             lineas.append(f"  {'':<34}{dia_y_hora(i.momento)}")
     lineas.append("")
@@ -43,6 +49,7 @@ def texto_resumen(r) -> str:
 
 
 def main(argv=None):
+    """Punto de entrada de la linea de comandos."""
     parser = argparse.ArgumentParser(description="Calcula los indicadores de una semana")
     parser.add_argument("--semana", default=None)
     args = parser.parse_args(argv)

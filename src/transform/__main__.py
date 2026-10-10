@@ -10,6 +10,7 @@ log = obtener_logger("src.transform")
 
 
 def main(argv=None):
+    """Punto de entrada de la linea de comandos."""
     parser = argparse.ArgumentParser(description="Convierte los crudos de una semana a parquet")
     parser.add_argument("--semana", default=None, help="ej. 2026-W40 (por defecto la ultima completa)")
     args = parser.parse_args(argv)

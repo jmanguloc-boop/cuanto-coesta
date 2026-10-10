@@ -29,6 +29,7 @@ def descargar_todo(desde, hasta, fuentes=None, forzar=False, cliente=None):
 
 
 def main(argv=None):
+    """Punto de entrada de la linea de comandos."""
     parser = argparse.ArgumentParser(description="Descarga data publica del COES")
     parser.add_argument("--desde", type=date.fromisoformat)
     parser.add_argument("--hasta", type=date.fromisoformat)

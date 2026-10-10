@@ -13,6 +13,7 @@ def hora_del_dia(fecha_hora: pd.Series) -> pd.Series:
 # ---------- precios ----------
 
 def serie_cmg_referencia(cmg: pd.DataFrame) -> pd.DataFrame:
+    """Serie del costo marginal total en la barra de referencia."""
     if cmg.empty:
         return pd.DataFrame(columns=["fecha_hora", "valor"])
     barra = config.cargar_yaml("analisis")["barra_referencia"]
@@ -21,6 +22,7 @@ def serie_cmg_referencia(cmg: pd.DataFrame) -> pd.DataFrame:
 
 
 def precios(serie: pd.DataFrame, umbrales: dict) -> dict:
+    """Promedio, maximo, minimo y horas con precio alto o bajo."""
     if serie.empty:
         return {}
     imax, imin = serie["valor"].idxmax(), serie["valor"].idxmin()
@@ -35,6 +37,7 @@ def precios(serie: pd.DataFrame, umbrales: dict) -> dict:
 
 
 def perfil_horario(serie: pd.DataFrame) -> pd.Series:
+    """Precio promedio por hora del dia (0 a 23)."""
     if serie.empty:
         return pd.Series(dtype=float)
     return serie.groupby(hora_del_dia(serie["fecha_hora"]))["valor"].mean()
@@ -43,6 +46,7 @@ def perfil_horario(serie: pd.DataFrame) -> pd.Series:
 # ---------- demanda ----------
 
 def serie_demanda(dem: pd.DataFrame) -> pd.DataFrame:
+    """Demanda en formato ancho: ejecutada, programa diario y semanal."""
     if dem.empty:
         return pd.DataFrame(columns=["fecha_hora", "fecha", "ejecutada", "prog_diaria"])
     ancho = dem.pivot_table(index=["fecha_hora", "fecha"], columns="variable", values="valor").reset_index()
@@ -51,6 +55,7 @@ def serie_demanda(dem: pd.DataFrame) -> pd.DataFrame:
 
 
 def demanda(serie: pd.DataFrame) -> dict:
+    """Demanda maxima, energia de la semana y error del programa diario."""
     if serie.empty:
         return {}
     imax = serie["ejecutada"].idxmax()
@@ -65,12 +70,14 @@ def demanda(serie: pd.DataFrame) -> dict:
 # ---------- generacion ----------
 
 def serie_generacion(gen: pd.DataFrame) -> pd.DataFrame:
+    """Generacion sumada por tecnologia e intervalo."""
     if gen.empty:
         return pd.DataFrame(columns=["fecha_hora", "tecnologia", "valor"])
     return gen.groupby(["fecha_hora", "fecha", "tecnologia"], as_index=False)["valor"].sum()
 
 
 def mix(serie: pd.DataFrame) -> dict:
+    """Participacion de cada tecnologia en la energia de la semana."""
     if serie.empty:
         return {}
     energia = serie.groupby("tecnologia")["valor"].sum().clip(lower=0)
@@ -79,6 +86,7 @@ def mix(serie: pd.DataFrame) -> dict:
 
 
 def participacion_renovable(participaciones: dict) -> tuple:
+    """Participacion renovable con y sin hidro."""
     mapeos = config.cargar_yaml("mapeos")
     con = sum(v for k, v in participaciones.items() if k in mapeos["renovables_con_hidro"])
     sin = sum(v for k, v in participaciones.items() if k in mapeos["renovables_sin_hidro"])

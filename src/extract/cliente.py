@@ -54,6 +54,7 @@ class ClienteCoes:
         return edad < timedelta(hours=self.cfg["horas_vigencia_reciente"])
 
     def url(self, ruta):
+        """URL absoluta a partir de una ruta del portal."""
         return ruta if ruta.startswith("http") else self.portal + ruta
 
     def pedir(self, metodo, url, params=None):
@@ -87,4 +88,5 @@ class ClienteCoes:
 
 
 def formato_coes(fecha: date) -> str:
+    """Fecha en el formato dd/mm/aaaa que pide el portal."""
     return fecha.strftime("%d/%m/%Y")

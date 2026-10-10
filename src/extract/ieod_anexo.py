@@ -10,4 +10,5 @@ def _obtener(cliente, fuente, inicio, fin):
 
 
 def descargar(desde, hasta, cliente=None, raiz=None, forzar=False):
+    """Baja el Anexo A del IEOD, un archivo por dia."""
     return descargar_por_tramos(NOMBRE, desde, hasta, _obtener, cliente, raiz, forzar)

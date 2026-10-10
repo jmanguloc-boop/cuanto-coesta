@@ -21,6 +21,7 @@ def _marcar_preliminar(df, dias_evaluados):
 # ---------- demanda ----------
 
 def leer_demanda_xlsx(ruta):
+    """Excel de demanda del portal a formato largo."""
     crudo = pd.read_excel(ruta, header=None, skiprows=4)
     crudo = crudo.iloc[:, :4]
     crudo.columns = ["fecha_hora", "demanda_ejecutada", "demanda_prog_diaria", "demanda_prog_semanal"]
@@ -32,6 +33,7 @@ def leer_demanda_xlsx(ruta):
 
 
 def tabla_demanda(desde, hasta, raiz=None):
+    """Tabla de demanda de la semana."""
     partes = [leer_demanda_xlsx(r) for r in archivos_del_rango("demanda", desde, hasta, raiz)]
     if not partes:
         return pd.DataFrame()
@@ -66,6 +68,7 @@ def corregir_solar_bagazo(series, nombre_archivo=""):
 
 
 def leer_generacion_json(ruta):
+    """JSON de generacion a formato largo, con tecnologia."""
     datos = json.loads(ruta.read_bytes().decode("utf-8-sig"))
     mapeo = config.cargar_yaml("mapeos")["recursos"]
     series = datos["GraficoTipoCombustible"]["Series"]
@@ -90,6 +93,7 @@ def leer_generacion_json(ruta):
 
 
 def tabla_generacion(desde, hasta, raiz=None):
+    """Tabla de generacion por tecnologia de la semana."""
     partes = [leer_generacion_json(r) for r in archivos_del_rango("generacion", desde, hasta, raiz)]
     if not partes:
         return pd.DataFrame()
@@ -103,6 +107,7 @@ HOJAS_CMG = {"Cmg_Barra": "cmg_total", "Cmg_Ener": "cmg_energia", "Cmg_Cong": "c
 
 
 def leer_cmg_ieod(ruta):
+    """CMgCP del IEOD (total, energia, congestion) a formato largo."""
     partes = []
     for hoja, variable in HOJAS_CMG.items():
         crudo = pd.read_excel(ruta, sheet_name=hoja, header=None)
@@ -120,6 +125,7 @@ def leer_cmg_ieod(ruta):
 
 
 def leer_cmg_tr(ruta):
+    """Exportacion de CMg en tiempo real a formato largo."""
     crudo = pd.read_excel(ruta, header=None, skiprows=5).iloc[:, 1:7]
     crudo.columns = ["fecha_hora", "nodo", "entidad", "cmg_energia", "cmg_congestion", "cmg_total"]
     crudo["fecha_hora"] = pd.to_datetime(crudo["fecha_hora"], format="%d/%m/%Y %H:%M", errors="coerce")
@@ -154,6 +160,7 @@ def _hoja(ruta, prefijo):
 
 
 def leer_embalses(ruta, fecha):
+    """Hoja de volumenes del IEOD a formato largo."""
     crudo = pd.read_excel(ruta, sheet_name=_hoja(ruta, "PRINCIPVOL"), header=None)
     meta = crudo.iloc[4:10, 1:].T
     meta.columns = ["empresa", "cuenca", "instalacion", "equipo", "tipo", "unidad"]
@@ -165,7 +172,7 @@ def leer_embalses(ruta, fecha):
             continue
         variable = "volumen_util" if "VOLUMEN" in clave_ascii(info["tipo"]) else "nivel"
         serie = pd.to_numeric(datos[col], errors="coerce")
-        for hora, valor in zip(datos.iloc[:, 0], serie):
+        for hora, valor in zip(datos.iloc[:, 0], serie, strict=True):
             filas.append({
                 "fecha_hora": pd.Timestamp(f"{fecha} {hora}"),
                 "fecha": fecha,
@@ -180,6 +187,7 @@ def leer_embalses(ruta, fecha):
 
 
 def tabla_embalses(desde, hasta, raiz=None):
+    """Tabla de embalses de la semana."""
     from src.transform.comun import fechas_de_archivo
     partes = [leer_embalses(r, fechas_de_archivo(r)[0]) for r in archivos_del_rango("ieod_anexo", desde, hasta, raiz)]
     if not partes:
@@ -198,6 +206,7 @@ def tabla_embalses(desde, hasta, raiz=None):
 # ---------- generacion por central (IEOD, hoja DESPACHO_EJECUTADO) ----------
 
 def leer_centrales(ruta):
+    """Hoja DESPACHO_EJECUTADO del IEOD a formato largo."""
     crudo = pd.read_excel(ruta, sheet_name="DESPACHO_EJECUTADO", header=None)
     mapeo = config.cargar_yaml("mapeos")["tipos_central"]
     meta = crudo.iloc[5:10, 2:].T
@@ -222,6 +231,7 @@ def leer_centrales(ruta):
 
 
 def tabla_centrales(desde, hasta, raiz=None):
+    """Tabla de generacion por central de la semana."""
     partes = [leer_centrales(r) for r in archivos_del_rango("ieod_anexo", desde, hasta, raiz)]
     if not partes:
         return pd.DataFrame()

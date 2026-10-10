@@ -35,6 +35,7 @@ def validar_contenido(contenido: bytes, formato: str):
 
 
 def ruta_archivo(nombre_fuente, desde, hasta, formato, raiz=None):
+    """Ruta en data/raw para un tramo de fechas de una fuente."""
     raiz = Path(raiz or config.DIR_RAW)
     if desde == hasta:
         nombre = f"{nombre_fuente}_{desde:%Y%m%d}.{formato}"

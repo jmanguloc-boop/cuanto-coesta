@@ -5,7 +5,6 @@ import io
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.ticker import FuncFormatter  # noqa: E402
@@ -56,6 +55,7 @@ def _png(fig):
 
 
 def precio_semana(serie, umbrales, titulo):
+    """PNG del costo marginal de la semana."""
     p = _paleta()
     fig, ax = _figura(alto_mm=62)
     ax.plot(serie["fecha_hora"], serie["valor"], color=p["secundario"], linewidth=1.2)
@@ -70,6 +70,7 @@ def precio_semana(serie, umbrales, titulo):
 
 
 def perfil_horario(perfil, titulo):
+    """PNG del precio por hora."""
     p = _paleta()
     fig, ax = _figura(alto_mm=52)
     ax.bar(perfil["hora"], perfil["actual"], color=p["secundario"], width=0.75, label="Esta semana")
@@ -86,6 +87,7 @@ def perfil_horario(perfil, titulo):
 
 
 def demanda(serie, titulo):
+    """PNG de demanda real vs programada."""
     p = _paleta()
     fig, ax = _figura(alto_mm=72)
     ax.plot(serie["fecha_hora"], serie["prog_diaria"], color=p["texto_suave"], linestyle=":", linewidth=0.9,
@@ -103,6 +105,7 @@ def demanda(serie, titulo):
 
 
 def generacion(serie, titulo):
+    """PNG de generacion por tecnologia."""
     p = _paleta()
     proyecto = config.proyecto()
     ancho = serie.pivot_table(index="fecha_hora", columns="tecnologia", values="valor", aggfunc="sum").fillna(0).clip(lower=0)
@@ -119,6 +122,7 @@ def generacion(serie, titulo):
 
 
 def mix(participaciones, anterior, titulo):
+    """PNG de participacion por tecnologia."""
     p = _paleta()
     tecs = [t for t in sorted(participaciones, key=participaciones.get) if participaciones[t] >= 0.001]
     fig, ax = _figura(alto_mm=52)
@@ -127,7 +131,7 @@ def mix(participaciones, anterior, titulo):
         ax.barh([i - 0.2 for i in y], [anterior.get(t, 0) * 100 for t in tecs], height=0.35, color="#D5DCE3")
     barras = ax.barh([i + 0.15 for i in y], [participaciones[t] * 100 for t in tecs], height=0.35,
                      color=[config.color_tecnologia(t) for t in tecs])
-    for barra, t in zip(barras, tecs):
+    for barra, t in zip(barras, tecs, strict=True):
         ax.text(barra.get_width() + 0.5, barra.get_y() + barra.get_height() / 2, f"{participaciones[t] * 100:.1f}%",
                 va="center", fontsize=6.5, color=p["texto"])
     ax.set_yticks(list(y))
@@ -140,6 +144,7 @@ def mix(participaciones, anterior, titulo):
 
 
 def embalses(serie, titulo):
+    """PNG del volumen de embalses por dia."""
     p = _paleta()
     fig, ax = _figura(alto_mm=60)
     etiquetas = [f"{ABREV[d.weekday()]} {d.day}/{d.month}" for d in serie["fecha"]]
@@ -151,6 +156,7 @@ def embalses(serie, titulo):
 
 
 def embalses_detalle(detalle, titulo, n=8):
+    """PNG de los embalses con mas agua."""
     top = detalle.dropna(subset=["actual"]).nlargest(n, "actual").iloc[::-1]
     fig, ax = _figura(alto_mm=62)
     y = range(len(top))

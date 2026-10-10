@@ -75,4 +75,5 @@ class ResumenSemanal:
     historico: pd.DataFrame = field(default_factory=pd.DataFrame)  # metricas de semanas previas
 
     def ind(self, clave):
+        """Indicador por clave o None."""
         return self.indicadores.get(clave)

@@ -23,22 +23,27 @@ def cargar_yaml(nombre):
 
 
 def proyecto():
+    """Contenido de config/proyecto.yaml."""
     return cargar_yaml("proyecto")
 
 
 def fuentes():
+    """Contenido de config/fuentes.yaml."""
     return cargar_yaml("fuentes")
 
 
 def glosario():
+    """Contenido de config/glosario.yaml."""
     return cargar_yaml("glosario")
 
 
 def color_tecnologia(clave):
+    """Color fijo de una tecnologia."""
     techs = proyecto()["tecnologias"]
     return techs.get(clave, techs["otros"])["color"]
 
 
 def nombre_tecnologia(clave):
+    """Nombre visible de una tecnologia."""
     techs = proyecto()["tecnologias"]
     return techs.get(clave, techs["otros"])["nombre"]

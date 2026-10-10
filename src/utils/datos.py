@@ -8,6 +8,7 @@ from src.utils import config
 
 
 def ruta_tabla(tabla, semana, raiz=None):
+    """Ruta del parquet de una tabla y semana."""
     return Path(raiz or config.DIR_PROCESSED) / tabla / f"{tabla}_{semana}.parquet"
 
 

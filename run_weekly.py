@@ -32,6 +32,7 @@ def semanas_a_preparar(semana, historico):
 
 
 def correr(semana, historico=1, descargar=True):
+    """Corre todo el pipeline para una semana y devuelve la ruta del PDF."""
     semanas = semanas_a_preparar(semana, historico)
     cliente = ClienteCoes()
     errores_extraccion = {}
@@ -60,6 +61,7 @@ def correr(semana, historico=1, descargar=True):
 
 
 def main(argv=None):
+    """Punto de entrada de la linea de comandos."""
     parser = argparse.ArgumentParser(description="Corre el pipeline semanal completo")
     parser.add_argument("--semana", default=None, help="AAAA-Www (por defecto la ultima completa)")
     parser.add_argument("--historico", type=int, default=1, help="semanas previas a bajar (max 8 recomendado)")

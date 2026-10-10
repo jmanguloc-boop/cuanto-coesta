@@ -24,6 +24,7 @@ def _obtener(cliente, fuente, inicio, fin):
 
 
 def descargar(desde, hasta, cliente=None, raiz=None, forzar=False):
+    """Baja el CMg del IEOD dia por dia y cubre faltantes con el respaldo."""
     archivos = descargar_por_tramos(NOMBRE, desde, hasta, _obtener, cliente, raiz, forzar)
     if len(archivos) < (hasta - desde).days + 1:
         # Faltan dias en el IEOD: bajar el respaldo en tiempo real para todo el rango

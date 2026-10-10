@@ -2,6 +2,7 @@
 
 
 def numero(valor, decimales=0):
+    """Numero con miles con coma y decimales con punto."""
     if valor is None:
         return "s/d"
     return f"{valor:,.{decimales}f}"
@@ -22,6 +23,7 @@ def variacion(actual, anterior):
 
 
 def flecha(var):
+    """Flecha segun el signo de la variacion."""
     if var is None:
         return ""
     if abs(var) < 0.0005:

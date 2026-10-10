@@ -39,9 +39,11 @@ class ReportePDF(FPDF):
         self.set_author(self.proyecto["nombre"])
 
     def color_texto(self, clave):
+        """Color de texto de la paleta."""
         self.set_text_color(*_rgb(self.paleta[clave]))
 
     def header(self):
+        """Encabezado de las paginas interiores."""
         if self.page_no() == 1:
             return
         self.set_font(FUENTE, "B", 9)
@@ -56,6 +58,7 @@ class ReportePDF(FPDF):
         self.ln(4)
 
     def footer(self):
+        """Pie con fuente, aviso y numero de pagina."""
         self.set_y(-13)
         self.set_font(FUENTE, "", 7)
         self.color_texto("texto_suave")
@@ -65,18 +68,21 @@ class ReportePDF(FPDF):
     # ---------- piezas ----------
 
     def titulo_seccion(self, texto):
+        """Titulo grande de seccion."""
         self.set_font(FUENTE, "B", 16)
         self.color_texto("primario")
         self.cell(0, 9, texto, new_x="LMARGIN", new_y="NEXT")
         self.ln(1)
 
     def parrafo(self, texto, tam=9.5):
+        """Parrafo de texto corrido."""
         self.set_font(FUENTE, "", tam)
         self.color_texto("texto")
         self.multi_cell(0, 5, texto, align="L", new_x="LMARGIN", new_y="NEXT")
         self.ln(2)
 
     def imagen(self, png, alto):
+        """Inserta un grafico a todo el ancho."""
         self.image(png, x=15, w=180, h=alto)
         self.ln(1)
 
@@ -111,6 +117,7 @@ class ReportePDF(FPDF):
         self.set_y(y + alto + 4)
 
     def tarjeta(self, x, y, ancho, etiqueta, valor, var_texto, color_var, tam_valor=14):
+        """Tarjeta de indicador: etiqueta, valor y variacion."""
         self.set_fill_color(*_rgb(self.paleta["fondo_suave"]))
         self.rect(x, y, ancho, 30, style="F")
         self.set_xy(x + 3, y + 3)
