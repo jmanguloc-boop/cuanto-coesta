@@ -2,39 +2,61 @@
 
 **El sistema eléctrico peruano, explicado al toque.**
 
-Bot open source que cada semana descarga los datos públicos del
-[COES](https://www.coes.org.pe), los ordena, calcula indicadores y los explica
-en lenguaje simple en:
-
-1. **Un dashboard** en Streamlit, con explicaciones al pasar el mouse.
-2. **Un PDF semanal** de 6 páginas con cajitas de "¿Qué significa esto?" y glosario.
-
-Pensado para todos: desde analistas del sector hasta quien nunca miró su recibo de luz con lupa.
+Un medio de análisis eléctrico independiente y open source: descarga los datos
+públicos del [COES](https://www.coes.org.pe), los ordena, calcula indicadores y
+los explica como una historia que se puede leer en los datos. Riguroso con las
+cifras, directo en el lenguaje y transparente con el método.
 
 > **Aviso.** Proyecto independiente, **no afiliado al COES**. Usa datos públicos del
 > portal www.coes.org.pe, que pueden ser preliminares y cambiar después.
 
-![Dashboard](docs/capturas/dashboard_portada.png)
+![La señal de la semana](docs/capturas/escritorio_senal.png)
 
-| Dashboard en el celular | Portada del PDF |
+## Dos productos
+
+| | Cuánto COESta **Ahora** | **La semana eléctrica** |
+|---|---|---|
+| Qué es | Seguimiento frecuente del precio y la demanda | Edición semanal que explica qué pasó y qué cambió |
+| Frecuencia | Cada 30 minutos (lo que el COES publica de verdad) | Lunes, 7:00 a. m. de Lima |
+| Datos | Costo marginal en tiempo real por barra, demanda del SEIN | Precios, demanda, mix, renovables, precio capturado, embalses, mapa |
+| Dónde | Pestaña *Ahora* de la app | Resto de pestañas y PDF opcional |
+
+Si el COES no publicó un dato nuevo, se conserva el último y se muestra su
+antigüedad: **nunca se finge una actualización**.
+
+| El precio en vivo, con memoria | El mapa del costo eléctrico |
 |---|---|
-| ![Celular](docs/capturas/dashboard_celular.png) | ![PDF](docs/capturas/pdf_portada.png) |
+| ![Ahora](docs/capturas/escritorio_ahora.png) | ![Mapa](docs/capturas/escritorio_mapa.png) |
 
-## Qué calcula cada semana
+## La app de escritorio
 
-Todo se compara contra la semana anterior y la misma semana del año pasado.
+Una ventana de Python (Tkinter, viene con Python: no hay que instalar nada extra ni abrir el navegador).
 
-| Tema | Indicadores |
-|---|---|
-| Precios | Costo marginal promedio, máximo y mínimo (barra Santa Rosa 220 kV, Lima), precio según la hora del día, horas con precio alto (más de S/ 500 por MWh) y bajo (menos de S/ 100) |
-| Demanda | Demanda máxima con día y hora, energía consumida, diferencia con el programa diario del COES |
-| Generación | Mix por tecnología, % renovable con y sin hidro, precio capturado por la solar y la eólica |
-| Hidrología | Agua útil en los principales embalses |
-| Hechos destacados | Los 3 hechos más relevantes, detectados por reglas: grandes variaciones, récords del periodo y días anómalos |
+```bash
+python app/escritorio.py
+```
 
-Los textos se arman con plantillas y reglas fijas (sin inteligencia artificial):
-mismo dato, mismo texto, y nunca se afirma una causa que los datos no respalden.
-Todas las explicaciones viven en [`config/glosario.yaml`](config/glosario.yaml).
+Pestañas: **La señal** (portada editorial), **Ahora**, **Precios**, **Demanda**,
+**Generación**, **Hidrología**, **Mapa**, **Método y fuentes** y **Glosario**.
+Botones: *↻ Ahora* (consulta al COES en segundos), *↓ Descargar semana* (2 a 3 minutos) y
+*PDF* (opcional). Mientras está abierta, consulta el precio cada 30 minutos.
+
+Las tipografías (Barlow, Barlow Condensed e IBM Plex Mono, licencia OFL) vienen en
+`assets/fuentes` y se cargan solo para el programa, sin instalarlas.
+
+## Qué hace distinto
+
+- **El precio tiene memoria.** Cada precio se compara con la media hora anterior,
+  la misma hora de ayer y la misma hora de hace una semana.
+- **Detector de rarezas, no solo de máximos.** Marca las medias horas que rompen el
+  rango visto a esa misma hora en las 4 semanas previas, y explica qué regla se activó.
+- **Explicación en tres niveles.** Lectura rápida, explicación sencilla y nota técnica
+  para cada indicador, todo desde [`config/glosario.yaml`](config/glosario.yaml).
+- **El mapa del costo eléctrico.** Precio promedio por barra sobre el mapa del Perú.
+- **Lo que el sistema creía.** Se guardan las versiones del dato preliminar y se mide
+  cuánto cambia cuando el COES lo confirma (en la semana del 28/09 al 04/10/2026: 13.5 % en promedio).
+- **Sin inventar causas.** Los textos se arman con reglas fijas, sin inteligencia
+  artificial, y solo relacionan dos hechos cuando los datos lo respaldan.
 
 ## Cómo correrlo (3 comandos)
 
@@ -42,31 +64,50 @@ Requiere Python 3.11 o más nuevo.
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt   # Windows: .venv\Scripts\pip
-.venv/bin/python run_weekly.py                                      # baja, procesa y genera el PDF
-.venv/bin/streamlit run app/streamlit_app.py                        # abre el dashboard
+.venv/bin/python run_weekly.py                                      # baja y procesa la última semana
+.venv/bin/python app/escritorio.py                                  # abre la app
 ```
 
-El PDF queda en `reports/cuanto-coesta_AAAA-Www.pdf`. Más opciones:
+Más opciones:
 
 ```bash
+python run_ahora.py                        # una consulta "Ahora" (costo marginal y demanda)
+python run_ahora.py --desde-ayer --bucle   # primera carga y luego cada 30 minutos (Ctrl+C para salir)
+python run_weekly.py --pdf                 # además genera el PDF semanal
 python run_weekly.py --semana 2026-W40     # una semana específica
-python run_weekly.py --historico 8         # baja también las 8 semanas previas (para récords)
-python -m src.extract --desde 2026-10-01 --hasta 2026-10-07 --fuente demanda
-python -m src.transform --semana 2026-W40
-python -m src.analysis --semana 2026-W40   # resumen en consola
-python -m src.narrative --semana 2026-W40  # titulares y párrafos
-python -m src.report --semana 2026-W40 --png
+python run_weekly.py --historico 8         # baja también 8 semanas previas (para récords y rarezas)
+python -m src.report --semana 2026-W40     # solo el PDF
 python -m pytest -q
 ```
+
+### Consultar cada 30 minutos aunque la app esté cerrada (Windows)
+
+```bat
+schtasks /Create /SC MINUTE /MO 30 /TN "CuantoCOEStaAhora" ^
+  /TR "\"C:\ruta\al\proyecto\.venv\Scripts\python.exe\" \"C:\ruta\al\proyecto\run_ahora.py\"" /F
+```
+
+(En Mac o Linux, la línea equivalente de `cron` es `*/30 * * * * /ruta/.venv/bin/python /ruta/run_ahora.py`.)
+
+## El informe semanal en PDF (opcional)
+
+Seis páginas apaisadas con la misma identidad editorial: portada con el pulso en
+cuatro cifras, la señal de la semana, demanda y generación, hidrología y mapa, lo
+que merece atención y método y fuentes. Se genera solo si lo pides (botón *PDF* o
+`--pdf`).
+
+![PDF](docs/capturas/pdf_portada.png)
 
 ## Cómo funciona
 
 ```
 COES (portal + IEOD) --> src/extract --> data/raw
                          src/transform --> data/processed/*.parquet (formato largo, DuckDB)
-                         src/analysis  --> ResumenSemanal (indicadores + hechos)
-                         src/narrative --> titulares, párrafos, títulos de gráficos
-                         src/report    --> PDF            app/ --> dashboard
+                         src/analysis  --> ResumenSemanal (indicadores, rarezas, mapa, revisiones)
+                         src/narrative --> titulares, párrafos, tres niveles
+                         src/visual    --> gráficos editoriales (app y PDF)
+COES tiempo real   ----> src/ahora     --> data/ahora/ahora.sqlite (con versiones)
+                         app/escritorio.py (Tkinter)   src/report (PDF opcional)
 ```
 
 - Fuentes y hallazgos: [`docs/fuentes_coes.md`](docs/fuentes_coes.md)
@@ -74,37 +115,26 @@ COES (portal + IEOD) --> src/extract --> data/raw
 - Decisiones y estado: [`PROGRESO.md`](PROGRESO.md)
 
 El bot es respetuoso con el servidor del COES: se identifica, espera 2 segundos
-entre pedidos, guarda todo en caché y no vuelve a bajar días cerrados.
+entre pedidos, guarda todo en caché y solo pide lo que le falta.
 
 ## Automatización semanal (GitHub Actions)
 
 [`.github/workflows/semanal.yml`](.github/workflows/semanal.yml) corre cada **lunes a las
-7:00 a. m. (hora de Lima)**: instala dependencias, corre `run_weekly.py` y los tests,
-guarda `data/processed` en el repo (para el dashboard) y publica el PDF como
-**GitHub Release** (`semana-AAAA-Www`). También se puede lanzar a mano desde la
-pestaña *Actions* con una semana específica.
+7:00 a. m. (Lima)**: corre `run_weekly.py --pdf` y los tests, guarda `data/processed`
+en el repo y publica el PDF como **GitHub Release**.
 
-Si el lunes el COES todavía no publicó el informe del domingo, el reporte sale
-marcado como **preliminar** en lugar de fallar.
+## Versión web (opcional)
 
-## Desplegar el dashboard en Streamlit Community Cloud
+También existe un dashboard en Streamlit (`streamlit run app/streamlit_app.py`) por
+si algún día quieres publicarlo en internet con
+[Streamlit Community Cloud](https://share.streamlit.io): repositorio `cuanto-coesta`,
+rama `main`, archivo `app/streamlit_app.py`, Python 3.12.
 
-1. Sube este repositorio a GitHub (público).
-2. Corre el workflow una vez a mano (*Actions* > *Reporte semanal* > *Run workflow*)
-   para que `data/processed` quede en el repo.
-3. Entra a [share.streamlit.io](https://share.streamlit.io) con tu cuenta de GitHub y
-   elige *Create app* > *Deploy a public app from GitHub*.
-4. Completa: repositorio `tu-usuario/cuanto-coesta`, rama `main`, archivo principal
-   `app/streamlit_app.py`. En *Advanced settings* elige Python 3.12.
-5. *Deploy*. Cada lunes, cuando el workflow suba datos nuevos, la app se actualiza sola.
+## Cambiar el nombre o los colores
 
-El tema visual está en `app/.streamlit/config.toml` (Streamlit lo lee junto al script).
-
-## Cambiar el nombre
-
-El nombre, slug y tagline viven solo en [`config/proyecto.yaml`](config/proyecto.yaml).
-Cambia esas 3 líneas y todo el proyecto (dashboard, PDF, nombres de archivo) las toma de ahí.
+Nombre, slug, tagline, paleta y tipografías viven en [`config/proyecto.yaml`](config/proyecto.yaml).
 
 ## Licencia
 
-[MIT](LICENSE). Los datos pertenecen a su fuente, el COES.
+Código: [MIT](LICENSE). Tipografías: SIL Open Font License (ver `assets/fuentes`).
+Contorno del Perú: Natural Earth (dominio público). Los datos pertenecen al COES.

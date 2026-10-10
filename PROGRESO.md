@@ -14,6 +14,16 @@
 - [x] Bloque 10: Calidad y documentacion
 - [x] Bloque 11: Entrega final comprimida
 
+### Mejoras v2 (propuesta editorial, 2026-10-10)
+
+- [x] Fase 1: identidad editorial (paleta, fuentes OFL, mapa) y metadatos de fuentes
+- [x] Fase 2: Cuanto COESta Ahora (cada 30 min, versiones, memoria del precio)
+- [x] Fase 3: rarezas, preliminar vs revisado, costo por barra, explicacion en 3 niveles
+- [x] Fase 4: graficos editoriales compartidos
+- [x] Fase 5: app de escritorio Tkinter (producto principal)
+- [x] Fase 6: PDF editorial apaisado y opcional
+- [x] Fase 7: documentacion, capturas y entrega
+
 ## Bitacora
 
 ### Fase previa (2026-10-09, antes del prompt maestro)
@@ -169,6 +179,32 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   COMO_CORRERLO.txt con pasos para Windows y Mac.
 - Verificado: sin .venv, .git, __pycache__, data/raw, data/processed ni otros zip.
 
+### Mejoras v2 (2026-10-10)
+- **Identidad**: papel #F1F0E8, carbon #171916, verde #315D45, lima #D5FF42, cobre
+  #E46F3D. Barlow Condensed (cifras y titulares), Barlow (texto), IBM Plex Mono
+  (etiquetas), en assets/fuentes con licencia OFL; se cargan sin instalarse
+  (matplotlib por archivo, Tkinter con AddFontResourceEx privado, fpdf2 por archivo).
+- **Ahora** (src/ahora, run_ahora.py): costo marginal en tiempo real (procesos del
+  COES) y demanda, base SQLite con versiones. Primera carga: 7,590 valores y 66
+  revisiones del propio COES. Memoria del precio: vs media hora antes, ayer y hace
+  una semana. Si no hay dato nuevo se muestra la antiguedad.
+- **Rarezas**: un valor es raro si rompe el rango de su misma hora en 28 dias (con
+  margen de 10 % y S/ 60). Se probo mediana+MAD y marcaba hasta 193 medias horas por
+  semana (el precio salta entre ~S/ 180 y ~S/ 800); con el rango salen 0 a 4.
+- **Preliminar vs confirmado**: sin desfase horario (probado), 13.5 % de cambio medio
+  en W40, maximo S/ 660.7. El preliminar ahora se baja siempre (1 pedido por semana).
+- **Mapa**: 115 barras con coordenadas del mapa publico del COES; 102 cruzan con el
+  IEOD. Contorno del Peru de Natural Earth.
+- **Tres niveles**: nota_tecnica en las 19 entradas de indicadores del glosario;
+  lectura rapida e intermedia generadas con los datos de la semana.
+- **App de escritorio** (app/escritorio.py + app/tk_ui.py): 9 pestanas, tareas en
+  segundo plano en cola, consulta Ahora cada 30 min mientras esta abierta, DPI
+  consciente en Windows (nitida con escala 125 %).
+- **PDF opcional**: run_weekly.py ya no lo genera por defecto (--pdf); el workflow
+  de GitHub lo pide. A4 apaisado, 6 paginas, identidad del concepto.
+- Corregido al probar: los tests escribian en data/estado_fuentes.json real (ahora
+  aislados con un fixture); textos con "m.." (se pule todo parrafo).
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -225,6 +261,11 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 
 - **ruff** se uso solo para revisar; no se agrega a requirements (dependencias minimas).
 
+- **Tkinter** como pantalla principal: viene con Python, no abre navegador y funciona
+  en cualquier PC; el Streamlit queda como opcion para publicar en la web.
+- **SQLite** para Ahora: viene con Python y permite versionar cada observacion.
+- **Rarezas por rango** en vez de mediana+MAD (ver Mejoras v2).
+
 ## Pendientes
 
 - Eventos, mantenimientos e indisponibilidades (ya vienen en el Anexo A) para una version futura.
@@ -240,3 +281,7 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 3. Correr el workflow una vez a mano (Actions > Reporte semanal > Run workflow).
 4. Desplegar en share.streamlit.io: repo cuanto-coesta, rama main, archivo app/streamlit_app.py, Python 3.12.
 5. Completar `repositorio:` en config/proyecto.yaml con la URL del repo.
+- Las columnas "Ultima extraccion OK" de demanda, generacion e IEOD dicen "sin registro"
+  hasta la proxima descarga semanal (el registro se agrego en v2).
+- Mapa: 13 barras del mapa publico no cruzan por nombre con el IEOD; se podria mapear a mano.
+- La consulta cada 30 min con la app cerrada requiere programarla (README: Programador de tareas o cron).

@@ -42,6 +42,7 @@ ANCHO_TEXTO = 900
 # ---------- formato ----------
 
 def soles(v, unidad=True):
+    """Monto en soles, con o sin la unidad por MWh."""
     if v is None:
         return "s/d"
     return f"S/ {numero(v, 1)}" + (" por MWh" if unidad else "")
@@ -59,6 +60,7 @@ def variacion(ind, invertir=False, puntos=False, texto_ref="vs semana anterior")
 
 
 def ayuda(clave):
+    """Texto del glosario para el tooltip de una cifra."""
     g = GLOSARIO["indicadores"].get(clave) or GLOSARIO["terminos"].get(clave)
     if not g:
         return ""
@@ -72,6 +74,7 @@ def semanas_completas():
 
 
 def abrir_archivo(ruta):
+    """Abre un archivo con el programa predeterminado del sistema."""
     if sys.platform == "win32":
         os.startfile(ruta)  # noqa: S606
     elif sys.platform == "darwin":
@@ -691,6 +694,7 @@ class App:
 
 
 def main():
+    """Abre la app de escritorio."""
     configurar_logging()
     App().correr()
 

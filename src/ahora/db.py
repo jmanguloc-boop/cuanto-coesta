@@ -96,6 +96,7 @@ def guardar_demanda(con, filas, extraido_en):
 
 
 def registrar_extraccion(con, fuente, inicio, fin, ok, nuevos=0, revisados=0, detalle=""):
+    """Bitacora de cada consulta al COES."""
     con.execute("insert into extracciones (fuente, inicio, fin, ok, nuevos, revisados, detalle) values (?,?,?,?,?,?,?)",
                 (fuente, inicio, fin, int(ok), nuevos, revisados, detalle))
 

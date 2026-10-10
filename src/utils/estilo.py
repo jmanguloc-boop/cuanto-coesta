@@ -51,6 +51,7 @@ def familia(rol):
 
 
 def ruta_fuente(rol, estilo=""):
+    """Archivo TTF de un rol y estilo."""
     return DIR_FUENTES / ARCHIVOS[(rol, estilo)]
 
 

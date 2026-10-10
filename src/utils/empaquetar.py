@@ -30,11 +30,11 @@ WINDOWS (PowerShell o Simbolo del sistema)
 2. Crea el entorno e instala (solo la primera vez, tarda unos minutos):
      python -m venv .venv
      .venv\\Scripts\\pip install -r requirements.txt
-3. Descarga la ultima semana del COES y genera el PDF (2 a 3 minutos):
+3. Descarga y procesa la ultima semana del COES (2 a 3 minutos):
      .venv\\Scripts\\python run_weekly.py
-   El PDF queda en la carpeta reports\\
-4. Abre el dashboard en el navegador:
-     .venv\\Scripts\\streamlit run app\\streamlit_app.py
+4. Abre la app (una ventana, sin navegador):
+     .venv\\Scripts\\python app\\escritorio.py
+   Dentro: el boton AHORA trae el precio en vivo y PDF genera el informe (opcional).
 
 -------------------------------------------
 MAC (Terminal)
@@ -44,19 +44,21 @@ MAC (Terminal)
 2. Crea el entorno e instala (solo la primera vez):
      python3 -m venv .venv
      .venv/bin/pip install -r requirements.txt
-3. Descarga la ultima semana del COES y genera el PDF:
+3. Descarga y procesa la ultima semana del COES:
      .venv/bin/python run_weekly.py
-4. Abre el dashboard:
-     .venv/bin/streamlit run app/streamlit_app.py
+4. Abre la app:
+     .venv/bin/python app/escritorio.py
 
 -------------------------------------------
 Otras opciones
 -------------------------------------------
   run_weekly.py --semana 2026-W40     una semana especifica
-  run_weekly.py --historico 8         baja tambien las 8 semanas previas (records)
+  run_weekly.py --historico 8         baja tambien las 8 semanas previas (records y rarezas)
+  run_weekly.py --pdf                 genera tambien el PDF semanal
+  run_ahora.py --bucle                precio y demanda cada 30 minutos (Ctrl + C para salir)
   python -m pytest -q                 corre los tests
 
-Para detener el dashboard: Ctrl + C en la terminal.
+En Linux puede hacer falta instalar Tkinter: sudo apt install python3-tk
 Mas detalle en README.md. {aviso}
 """
 

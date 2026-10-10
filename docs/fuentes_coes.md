@@ -87,3 +87,26 @@ quedan disponibles para versiones futuras.
   `--` cuando no hay lectura.
 - Otras hojas utiles: `PRINCIP_CAUDALES`, `EVENTOS`, `INDISP`,
   `MANTENIMIENTO EJECUTADOS`, `TIPO_RECURSO`, `COSTO_OPE_EJEC`.
+
+## Cuanto COESta Ahora (cada 30 minutos)
+
+Verificado el 10/10/2026: a las 10:31 ya estaba publicado el intervalo de las
+10:00 (costo marginal) y el de las 10:30 (demanda).
+
+| Dato | Endpoint | Respuesta |
+|---|---|---|
+| Procesos de CMg del dia | `POST /mercadomayorista/costosmarginales/listaproceso` con `fecha` | JSON: `Cmgncorrelativo`, `FechaProceso` (hh:mm, 23:59 = fin del dia) |
+| CMg de un proceso | `POST /mercadomayorista/costosmarginales/lista` con `correlativo`, `defecto=S` | Tabla HTML: hora, barra, energia, congestion, total (~115 barras >= 138 kV, ~36 KB) |
+| Coordenadas de barras | `POST /mercadomayorista/costosmarginales/mapa` | HTML con `coorx` (latitud) y `coory` (longitud) por barra; guardado en `assets/mapas/barras_coordenadas.csv` (115 barras) |
+| Demanda del dia | `POST /portalinformacion/Demanda` | JSON: series Ejecutado (hasta el ultimo intervalo), Programacion diaria y semanal |
+
+- Un mismo intervalo puede tener varios procesos (el COES recalcula): el mas
+  reciente se guarda como version nueva y la anterior se conserva.
+- Algunos procesos vienen sin filas: se ignoran y se registran en el log.
+
+## Preliminar vs confirmado
+
+Comparando el CMg en tiempo real con el del IEOD en Santa Rosa 220 (semana
+28/09 - 04/10/2026, 283 medias horas con ambas versiones): sin desfase horario
+(probado con -60 a +60 min), 52 % de los valores iguales, cambio promedio de
+S/ 46.5 por MWh (13.5 % del precio medio) y un maximo de S/ 660.7.
