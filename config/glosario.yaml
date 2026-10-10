@@ -297,3 +297,26 @@ terminos:
       Un dato que el COES todavía puede corregir porque aún no publicó su evaluación
       final del día.
     por_que_importa: "Los números pueden cambiar un poco cuando el COES los confirme."
+
+# Datos editoriales para la caja "En simple" (uno por semana, rotan)
+en_simple:
+  - titulo: "Precio alto no significa automáticamente más consumo."
+    texto: >
+      La demanda dice cuánta electricidad necesita el país. El costo marginal depende de qué
+      central puede atenderla en ese momento y de cómo está la red.
+  - titulo: "El costo marginal no es tu recibo de luz."
+    texto: >
+      Es el precio mayorista de cada media hora. Tu tarifa se fija con otras reglas y cambia
+      más despacio, aunque a la larga ambos se relacionan.
+  - titulo: "Lo que se genera es lo que se consume."
+    texto: >
+      La electricidad casi no se almacena en la red: en cada instante, las centrales producen
+      exactamente lo que el país está usando.
+  - titulo: "El agua de hoy es la electricidad barata de mañana."
+    texto: >
+      Los embalses guardan agua en temporada de lluvias para producir en la época seca. Por eso
+      su nivel ayuda a anticipar los precios.
+  - titulo: "Un mismo MWh cuesta distinto según dónde se entregue."
+    texto: >
+      Cuando una línea de transmisión se llena, la energía barata no llega a todas partes y el
+      precio cambia de una barra a otra.

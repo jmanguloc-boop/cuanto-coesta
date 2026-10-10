@@ -50,6 +50,7 @@ def _fig(ancho=7.2, alto=2.8, oscuro=False):
 def _encabezado(fig, ax, titulo, kicker="", oscuro=False):
     """Kicker en mono (ej. 'PRECIO / HORA') y titular condensado que dice la conclusion."""
     p = paleta()
+    fig.titulo = titulo
     # Titulos largos en dos lineas segun el ancho de la figura (~9 caracteres por pulgada)
     lineas = textwrap.wrap(titulo, width=max(int(fig.get_figwidth() * 9), 20))[:2]
     alto_linea = 0.30 / fig.get_figheight()          # alto de una linea del titular en coordenadas del eje
@@ -239,7 +240,6 @@ def mix(participaciones, anterior, titulo, kicker="Mix · % de la energía"):
 
 def embalses(serie, titulo, kicker="Agua útil en embalses · Hm3"):
     """Volumen total por dia."""
-    p = paleta()
     fig, ax = _fig()
     etiquetas = [f"{ABREV[d.weekday()]} {d.day}/{d.month}" for d in serie["fecha"]]
     x = np.arange(len(serie))

@@ -43,9 +43,9 @@ jobs:
       - name: Correr el pipeline
         run: |
           if [ -n "${{ inputs.semana }}" ]; then
-            python run_weekly.py --semana "${{ inputs.semana }}"
+            python run_weekly.py --pdf --semana "${{ inputs.semana }}"
           else
-            python run_weekly.py
+            python run_weekly.py --pdf
           fi
 
       - name: Tests

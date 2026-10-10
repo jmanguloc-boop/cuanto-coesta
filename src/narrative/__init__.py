@@ -351,3 +351,44 @@ def generar_narrativa(r) -> Narrativa:
         },
         titulos_graficos={k: pulir(v) for k, v in titulos_graficos(r).items()},
     )
+
+
+# ---------- hechos explicados (transparencia de la regla) ----------
+
+CATEGORIA_HECHO = {
+    "cmg_promedio": "Precio", "cmg_minimo": "Precio", "rarezas": "Precio", "precio_capturado_solar": "Generación",
+    "demanda_maxima": "Demanda", "energia_semana": "Demanda", "participacion_renovable": "Generación",
+    "mix_generacion": "Generación", "volumen_embalses": "Hidrología",
+}
+
+
+def explicar_hecho(h, r):
+    """Que cambio, contra que se compara y que limitacion tiene la lectura."""
+    relevancia = config.cargar_yaml("analisis")["relevancia"]
+    d = h.datos
+    if h.tipo == "variacion":
+        ind = r.ind(h.clave)
+        umbral = relevancia.get(h.clave, 0)
+        cambio = pp(d["var"]) if d["es_puntos"] else pct(d["var"])
+        texto = (f"Esta semana {_valor_ind(ind)}; la anterior, {_valor_ind(type(ind)(h.clave, d['anterior'], ind.unidad))}"
+                 f" ({cambio} de diferencia). Se marca porque supera el umbral de "
+                 f"{pp(umbral) if d['es_puntos'] else pct(umbral)}.")
+    elif h.tipo == "record":
+        texto = (f"Comparado con las {d['semanas'] - 1} semanas consecutivas anteriores disponibles. "
+                 "Es un récord del periodo con datos, no un récord histórico.")
+    elif h.tipo == "rareza":
+        texto = d["regla"]
+    elif h.tipo == "anomalia":
+        texto = (f"El {dia_texto(d['fecha'])} el precio promedio fue {soles(d['valor'])}, frente a {soles(d['resto'])} "
+                 "en el resto de la semana. Solo se comparan días con datos casi completos.")
+    else:
+        g = config.glosario()["indicadores"].get(h.clave, {})
+        texto = " ".join(g.get("explicacion_simple", "").split())
+    return pulir(texto + " No se atribuye una causa: los datos muestran el cambio, no su porqué."
+                 if h.tipo in ("variacion", "anomalia", "rareza") else pulir(texto))
+
+
+def en_simple(r):
+    """Un dato editorial del glosario para la caja lima, distinto cada semana."""
+    datos = config.glosario().get("en_simple", [])
+    return elegir(datos, r.semana, "en_simple") if datos else None

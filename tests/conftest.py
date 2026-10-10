@@ -16,6 +16,13 @@ MUESTRAS = {
 }
 
 
+@pytest.fixture(autouse=True)
+def estado_aislado(tmp_path, monkeypatch):
+    """Ningun test escribe en el data/estado_fuentes.json real."""
+    from src.utils import estado
+    monkeypatch.setattr(estado, "RUTA", tmp_path / "estado_fuentes.json")
+
+
 @pytest.fixture(scope="session")
 def raw_muestra(tmp_path_factory):
     raiz = tmp_path_factory.mktemp("raw")
