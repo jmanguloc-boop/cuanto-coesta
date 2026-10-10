@@ -15,3 +15,14 @@ relevancia:
   volumen_embalses: 0.05
 
 semanas_minimas_para_record: 4  # no se habla de "record" con menos historia que esto
+
+# Deteccion de rarezas: un valor es raro para su hora si se aleja mucho de lo
+# habitual a esa misma hora en los dias previos. Se usa mediana y MAD (robustas
+# a picos), no promedio y desviacion estandar.
+rarezas:
+  dias_historia: 28           # ventana de comparacion
+  minimo_observaciones: 7     # con menos historia no se juzga
+  z_robusto: 3.5              # |valor - mediana| / (1.4826 * MAD)
+  diferencia_minima: 60       # S/ por MWh: ademas debe alejarse al menos esto
+  salto_intervalo_pct: 0.40   # salto vs media hora anterior que se reporta como "salto brusco"
+  salto_intervalo_min: 120    # ... y al menos estos S/ por MWh
