@@ -9,3 +9,4 @@ streamlit==1.65.0
 matplotlib==3.11.2
 fpdf2==2.8.9
 pytest==9.1.1
+pypdfium2==5.14.0

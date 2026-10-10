@@ -9,7 +9,7 @@
 - [x] Bloque 5: Indicadores semanales
 - [x] Bloque 6: Narrativa automatica
 - [x] Bloque 7: Dashboard Streamlit
-- [ ] Bloque 8: PDF semanal
+- [x] Bloque 8: PDF semanal
 - [ ] Bloque 9: Pipeline semanal y automatizacion
 - [ ] Bloque 10: Calidad y documentacion
 - [ ] Bloque 11: Entrega final comprimida
@@ -112,6 +112,21 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - Serie diaria de embalses: solo embalses con dato los 7 dias (robustez).
 - 42 tests en verde (incluye AppTest de Streamlit sin navegador).
 
+### Bloque 8: PDF semanal (2026-10-10)
+- src/report/: graficos.py (matplotlib, misma paleta y colores por tecnologia, ejes
+  con dias en espanol) y __init__.py (ReportePDF con fpdf2, sin HTML).
+- 6 paginas: portada (nombre, semana legible, aviso preliminar, 3 titulares, 8
+  tarjetas de indicadores con flecha y color), Precios, Demanda, Generacion,
+  Hidrologia (grafico + parrafo + cajita "Que significa esto" del glosario) y
+  Nota metodologica + Glosario completo a dos columnas. Encabezado, pie con aviso
+  y "Pagina X de N".
+- Fuente DejaVu tomada de matplotlib (tildes y flechas en cualquier sistema operativo).
+- CLI `python -m src.report --semana AAAA-Www [--png]` -> reports/cuanto-coesta_AAAA-Www.pdf;
+  portada exportada a docs/capturas/pdf_portada.png con pypdfium2.
+- Revisado visualmente y corregido: justificado raro, asteriscos de markdown,
+  alto de cajitas, dia extra en eje, leyenda encima de la linea.
+- 46 tests en verde (secciones, max 6 paginas, sin guion largo).
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -157,6 +172,9 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - **Graficos Plotly en app/graficos.py** (no en src/) porque solo los usa el dashboard;
   el PDF usa matplotlib con la misma paleta.
 - **Modo viewer** en Streamlit (`toolbarMode = "viewer"`) para ocultar el boton Deploy al publico.
+
+- **fpdf2 + matplotlib** (no reportlab): mas liviano y suficiente. pypdfium2 se agrega
+  solo para exportar la portada a PNG y para leer el PDF en los tests.
 
 ## Pendientes
 

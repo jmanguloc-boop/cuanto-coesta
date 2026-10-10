@@ -32,7 +32,7 @@ def _base(fig, titulo, alto=380, eje_y=""):
 
 def _eje_dias(fig, fechas):
     """Marcas del eje X en espanol: 'lun 28/9' a medianoche de cada dia."""
-    dias = pd.to_datetime(pd.Series(fechas)).dt.normalize().drop_duplicates().sort_values()
+    dias = (pd.to_datetime(pd.Series(fechas)) - pd.Timedelta(minutes=1)).dt.normalize().drop_duplicates().sort_values()
     abrev = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
     fig.update_xaxes(tickvals=list(dias), ticktext=[f"{abrev[d.weekday()]} {d.day}/{d.month}" for d in dias])
     return fig
