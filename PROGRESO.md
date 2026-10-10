@@ -4,7 +4,7 @@
 
 - [x] Bloque 1: Setup del repo
 - [x] Bloque 2: Reconocimiento de fuentes del COES
-- [ ] Bloque 3: Extractor
+- [x] Bloque 3: Extractor
 - [ ] Bloque 4: Transformacion y modelo de datos
 - [ ] Bloque 5: Indicadores semanales
 - [ ] Bloque 6: Narrativa automatica
@@ -39,6 +39,19 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - MVP: costo marginal, demanda, generacion por tecnologia, hidrologia.
 - Todo con requests; no hace falta Playwright.
 
+### Bloque 3: Extractor (2026-10-10)
+- Un modulo por fuente en src/extract/ (demanda, generacion, costo_marginal,
+  costo_marginal_tr, ieod_anexo), todos con `descargar(desde, hasta) -> lista de archivos`.
+- base.py: tramos de fechas, cache, validacion (rechaza HTML disfrazado de Excel).
+- cliente.py: pausa 2 s, reintentos con espera exponencial, timeout, acceso al
+  visor de archivos del COES. Un archivo vacio del visor = "aun no publicado".
+- costo_marginal baja el zip del IEOD, guarda solo CMgCP (~270 KB) y, si faltan
+  dias, baja el respaldo en tiempo real.
+- CLI `python -m src.extract --desde --hasta [--fuente]`; si una fuente falla se
+  registra y siguen las demas (codigo de salida 1).
+- Semana 2026-W40 completa en 35 s (22 archivos, ~13 MB). Respaldo probado con el 09/10.
+- 10 tests sin red, usando data/samples.
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -56,6 +69,10 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - **Hidrologia**: volumen util total (Hm3) de los embalses del IEOD. No hay un
   dato publico simple de capacidad maxima por embalse, asi que se compara contra
   semana anterior y anio anterior, no como % de llenado.
+
+- **IEOD Anexo A completo** (~1.1 MB/dia) en vez de solo la hoja de embalses: no
+  se puede pedir una hoja suelta, y el mismo archivo sirve luego para eventos y
+  mantenimientos.
 
 ## Pendientes
 
