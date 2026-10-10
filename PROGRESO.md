@@ -7,7 +7,7 @@
 - [x] Bloque 3: Extractor
 - [x] Bloque 4: Transformacion y modelo de datos
 - [x] Bloque 5: Indicadores semanales
-- [ ] Bloque 6: Narrativa automatica
+- [x] Bloque 6: Narrativa automatica
 - [ ] Bloque 7: Dashboard Streamlit
 - [ ] Bloque 8: PDF semanal
 - [ ] Bloque 9: Pipeline semanal y automatizacion
@@ -84,6 +84,17 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - W40: CMg promedio S/ 330.9 por MWh (-43.4% vs W39, +273.8% vs 2025), demanda
   maxima 8,346 MW, renovable 48.7%.
 - 33 tests en verde (incluye: todo indicador tiene glosario, sin guion largo).
+
+### Bloque 6: Narrativa automatica (2026-10-10)
+- src/narrative/: plantillas.py (2 a 3 variantes por caso) y __init__.py
+  (generar_narrativa -> Narrativa con 3 titulares, 4 parrafos y titulos de graficos
+  que dicen la conclusion). CLI `python -m src.narrative --semana`.
+- Variante elegida con hash de semana+caso: reproducible y distinta entre semanas.
+- Unica relacion causal permitida: precio vs hidro, solo si el precio cambia >= 10%
+  y la hidro >= 2 pp en sentido opuesto, y se dice "coincidio con", no "porque".
+- pulir(): contracciones (del, al) y puntuacion.
+- Probado con W40 (con comparaciones) y W39 (sin semana previa: solo describe).
+- 39 tests en verde (estilo, sin palabras causales, regla hidro con y sin respaldo).
 
 ## Decisiones
 
