@@ -12,7 +12,7 @@
 - [x] Bloque 8: PDF semanal
 - [x] Bloque 9: Pipeline semanal y automatizacion
 - [x] Bloque 10: Calidad y documentacion
-- [ ] Bloque 11: Entrega final comprimida
+- [x] Bloque 11: Entrega final comprimida
 
 ## Bitacora
 
@@ -162,6 +162,13 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   3.14, `pip install -r requirements.txt`, `python run_weekly.py` (exit 0, mismo
   resultado de W40) y `pytest` (47 passed).
 
+### Bloque 11: Entrega final comprimida (2026-10-10)
+- src/utils/empaquetar.py (`python -m src.utils.empaquetar`) arma con zipfile
+  `ENTREGA_cuanto-coesta_2026-10-10.zip` en la raiz: archivos versionados en git
+  (codigo, config, docs, tests, workflow, data/samples, capturas), el ultimo PDF y
+  COMO_CORRERLO.txt con pasos para Windows y Mac.
+- Verificado: sin .venv, .git, __pycache__, data/raw, data/processed ni otros zip.
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -226,3 +233,10 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - Reportar al COES el cruce de etiquetas SOLAR/BAGAZO de su portal (opcional, accion del usuario).
 - Records de embalses comparan totales aunque cambie levemente el numero de embalses
   que reportan (24 vs 25). Mejorar comparando solo el conjunto comun.
+### Acciones que requieren al usuario
+1. Crear el repo en GitHub (`cuanto-coesta`, publico) y subirlo:
+   `git remote add origin https://github.com/<usuario>/cuanto-coesta.git` y `git push -u origin main`.
+2. En GitHub: Settings > Actions > General > Workflow permissions: "Read and write".
+3. Correr el workflow una vez a mano (Actions > Reporte semanal > Run workflow).
+4. Desplegar en share.streamlit.io: repo cuanto-coesta, rama main, archivo app/streamlit_app.py, Python 3.12.
+5. Completar `repositorio:` en config/proyecto.yaml con la URL del repo.
