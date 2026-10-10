@@ -30,6 +30,9 @@ ARCHIVOS = {
 }
 
 # Alternativas por sistema si las fuentes del proyecto no cargan
+# matplotlib siempre trae DejaVu: es el respaldo seguro para graficos y PDF
+RESPALDO_MPL = {"titulares": ["DejaVu Sans"], "texto": ["DejaVu Sans"], "mono": ["DejaVu Sans Mono"]}
+
 RESPALDO = {
     "titulares": ["Bahnschrift SemiBold Condensed", "Arial Narrow", "Avenir Next Condensed", "DejaVu Sans Condensed"],
     "texto": ["Segoe UI", "Helvetica Neue", "Arial", "DejaVu Sans"],
@@ -56,8 +59,11 @@ def ruta_fuente(rol, estilo=""):
 @lru_cache(maxsize=None)
 def preparar_matplotlib():
     """Registra las fuentes en matplotlib y aplica el estilo editorial. Devuelve True si cargaron."""
+    import logging
+
     import matplotlib
     from matplotlib import font_manager
+    logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
     cargadas = True
     for archivo in set(ARCHIVOS.values()):
         try:
@@ -67,7 +73,7 @@ def preparar_matplotlib():
             cargadas = False
     p = paleta()
     matplotlib.rcParams.update({
-        "font.family": [familia("texto")] + RESPALDO["texto"],
+        "font.family": [familia("texto")] + RESPALDO_MPL["texto"],
         "font.size": 8,
         "axes.facecolor": p["blanco"],
         "figure.facecolor": p["blanco"],
@@ -89,7 +95,7 @@ def preparar_matplotlib():
 def fuente_mpl(rol, **extra):
     """Diccionario de fuente para textos de matplotlib (fontdict)."""
     preparar_matplotlib()
-    return {"family": [familia(rol)] + RESPALDO[rol], **extra}
+    return {"family": [familia(rol)] + RESPALDO_MPL[rol], **extra}
 
 
 # ---------- Tkinter ----------
