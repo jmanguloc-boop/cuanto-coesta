@@ -108,11 +108,18 @@ def volumen_por_embalse(emb: pd.DataFrame) -> pd.Series:
 
 
 def serie_embalses(emb: pd.DataFrame) -> pd.DataFrame:
-    """Volumen util total al cierre de cada dia (solo embalses con dato ese dia)."""
+    """Volumen util total al cierre de cada dia.
+
+    Solo entran embalses con dato todos los dias: si no, un embalse sin lectura
+    pareceria agua que desaparecio.
+    """
     if emb.empty:
         return pd.DataFrame(columns=["fecha", "valor"])
-    vol = emb[emb["variable"] == "volumen_util"].sort_values("fecha_hora")
+    vol = emb[emb["variable"] == "volumen_util"].dropna(subset=["valor"]).sort_values("fecha_hora")
     cierre = vol.groupby(["fecha", "entidad"])["valor"].last().reset_index()
+    dias = cierre["fecha"].nunique()
+    completos = cierre.groupby("entidad")["fecha"].nunique()
+    cierre = cierre[cierre["entidad"].isin(completos[completos == dias].index)]
     return cierre.groupby("fecha", as_index=False)["valor"].sum()
 
 

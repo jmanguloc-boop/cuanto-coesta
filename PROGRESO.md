@@ -8,7 +8,7 @@
 - [x] Bloque 4: Transformacion y modelo de datos
 - [x] Bloque 5: Indicadores semanales
 - [x] Bloque 6: Narrativa automatica
-- [ ] Bloque 7: Dashboard Streamlit
+- [x] Bloque 7: Dashboard Streamlit
 - [ ] Bloque 8: PDF semanal
 - [ ] Bloque 9: Pipeline semanal y automatizacion
 - [ ] Bloque 10: Calidad y documentacion
@@ -96,6 +96,22 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - Probado con W40 (con comparaciones) y W39 (sin semana previa: solo describe).
 - 39 tests en verde (estilo, sin palabras causales, regla hidro con y sin respaldo).
 
+### Bloque 7: Dashboard Streamlit (2026-10-10)
+- app/streamlit_app.py: encabezado con nombre, tagline y selector de semana; portada
+  con 3 titulares y 4 st.metric (help del glosario, delta vs semana anterior, color
+  invertido en precio); pestanas Precios, Demanda, Generacion, Hidrologia, Glosario,
+  Sobre el proyecto; expander "Que significa esto" bajo cada grafico; boton de PDF;
+  aviso de datos preliminares; pie con fuente, fecha de actualizacion y no afiliacion.
+- app/graficos.py: 7 graficos Plotly con hover en espanol (valor, unidad y frase
+  simple), ejes con dias en espanol, color fijo por tecnologia, separadores 12,345.6.
+- app/.streamlit/config.toml con la paleta (test verifica que coincida con proyecto.yaml);
+  Streamlit lee la config junto al script, verificado en su codigo fuente.
+- st.cache_data para resumen y lista de semanas.
+- Capturas automaticas con Playwright en docs/capturas/ (portada, generacion,
+  hidrologia y celular 390 px).
+- Serie diaria de embalses: solo embalses con dato los 7 dias (robustez).
+- 42 tests en verde (incluye AppTest de Streamlit sin navegador).
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -137,6 +153,10 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   semanas previas disponibles.
 - **Glosario sin cifras dudosas**: se quito "1 MW = 1,000 casas" (no verificado);
   solo quedan conversiones exactas (1 GWh = 1 millon de kWh, 1 Hm3 = mil millones de litros).
+
+- **Graficos Plotly en app/graficos.py** (no en src/) porque solo los usa el dashboard;
+  el PDF usa matplotlib con la misma paleta.
+- **Modo viewer** en Streamlit (`toolbarMode = "viewer"`) para ocultar el boton Deploy al publico.
 
 ## Pendientes
 
