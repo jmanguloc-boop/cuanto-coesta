@@ -1,49 +1,75 @@
-# Fuentes de datos publicas. Detalle y hallazgos en docs/fuentes_coes.md
-# Fechas en los parametros: formato dd/mm/aaaa (lo exige el portal COES)
+# Fuentes publicas del COES. Detalle y hallazgos en docs/fuentes_coes.md
+# Fechas en los parametros del portal: dd/mm/aaaa
 
 cliente:
-  user_agent: "PulsoElectricoPeru/0.1 (bot open source; data publica COES)"
+  user_agent: "CuantoCOESta/0.2 (bot open source; data publica COES)"
   pausa_segundos: 2.0        # espera minima entre dos pedidos al servidor
-  timeout_segundos: 120
+  timeout_segundos: 180
   reintentos: 3
   # Dias recientes que el COES aun puede corregir: se vuelven a bajar
   # si la copia en cache tiene mas de horas_vigencia_reciente horas
   dias_provisionales: 3
   horas_vigencia_reciente: 6
 
+portal: "https://www.coes.org.pe/Portal"
+
 fuentes:
   demanda:
+    mvp: true
     descripcion: "Demanda del SEIN cada 30 min: ejecutada, programa diario y semanal (MW)"
-    pagina: "https://www.coes.org.pe/Portal/portalinformacion/demanda"
-    url: "https://www.coes.org.pe/Portal/portalinformacion/ExportarDemanda"
+    pagina: "/portalinformacion/demanda"
+    url: "/portalinformacion/ExportarDemanda"
     metodo: GET
     formato: xlsx
-    params:
-      fechaInicial: "{desde}"
-      fechaFinal: "{hasta}"
+    params: {fechaInicial: "{desde}", fechaFinal: "{hasta}"}
     max_dias_por_pedido: 31
 
   generacion:
-    descripcion: "Produccion por central y por tipo de recurso cada 30 min (MW)"
-    pagina: "https://www.coes.org.pe/Portal/portalinformacion/generacion"
-    url: "https://www.coes.org.pe/Portal/portalinformacion/Generacion"
+    mvp: true
+    descripcion: "Produccion por tipo de recurso y por central cada 30 min (MW)"
+    pagina: "/portalinformacion/generacion"
+    url: "/portalinformacion/Generacion"
     metodo: POST
     formato: json
-    params:
-      fechaInicial: "{desde}"
-      fechaFinal: "{hasta}"
-      indicador: 0
-    # El endpoint ignora el rango y solo devuelve el primer dia: pedir dia por dia
-    max_dias_por_pedido: 1
+    params: {fechaInicial: "{desde}", fechaFinal: "{hasta}", indicador: 0}
+    max_dias_por_pedido: 1    # el endpoint ignora el rango: solo devuelve el primer dia
 
   costo_marginal:
-    descripcion: "Costo marginal por barra (>= 138 kV) cada 30 min (S/ por MWh)"
-    pagina: "https://www.coes.org.pe/Portal/mercadomayorista/costosmarginales"
-    url: "https://www.coes.org.pe/Portal/mercadomayorista/costosmarginales/ExportarMasivo"
+    mvp: true
+    descripcion: "Costo marginal de corto plazo por barra cada 30 min (S/ por MWh), version post operacion del IEOD"
+    pagina: "/PostOperacion/Reportes/Ieod"
+    url: "/browser/download"
+    metodo: IEOD_ZIP
+    formato: xlsx
+    # Dentro del zip diario solo se conserva este Excel (275 KB de 5.4 MB)
+    ruta_ieod: "Post Operación/Reportes/IEOD/{anio}/{mes_carpeta}/{dia}/CMg{aaaammdd}.zip"
+    miembro_zip: "CMg{aaaammdd}/CMgCP{ddmm}.xlsx"
+    max_dias_por_pedido: 1
+
+  costo_marginal_tr:
+    mvp: true
+    respaldo_de: costo_marginal
+    descripcion: "Costo marginal en tiempo real (barras >= 138 kV). Incompleto: ~35 de 48 intervalos por dia"
+    pagina: "/mercadomayorista/costosmarginales"
+    url: "/mercadomayorista/costosmarginales/ExportarMasivo"
     metodo: GET
     formato: xlsx
-    params:
-      fechaInicio: "{desde}"
-      fechaFin: "{hasta}"
-      defecto: "S"            # S = barras mayores a 138 kV ; vacio = todas
-    max_dias_por_pedido: 30   # la web rechaza rangos de mas de 30 dias
+    params: {fechaInicio: "{desde}", fechaFin: "{hasta}", defecto: "S"}
+    max_dias_por_pedido: 30
+
+  ieod_anexo:
+    mvp: true
+    descripcion: "Anexo A del Informe de Evaluacion de la Operacion Diaria: 46 hojas (embalses, caudales, eventos, mantenimientos)"
+    pagina: "/PostOperacion/Reportes/Ieod"
+    url: "/browser/download"
+    metodo: IEOD
+    formato: xlsx
+    ruta_ieod: "Post Operación/Reportes/IEOD/{anio}/{mes_carpeta}/{dia}/AnexoA_{ddmm}.xlsx"
+    max_dias_por_pedido: 1
+
+# Carpetas de mes del IEOD (ojo: "Setiembre", no "Septiembre")
+meses_ieod: [Enero, Febrero, Marzo, Abril, Mayo, Junio, Julio, Agosto, Setiembre, Octubre, Noviembre, Diciembre]
+
+# Barra de referencia para precios: Santa Rosa 220 kV (Lima), la barra de
+# referencia historica del SEIN para tarifas en barra
+barra_referencia: "SANTA ROSA 220"

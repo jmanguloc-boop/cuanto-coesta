@@ -1,80 +1,89 @@
 # Fuentes de datos del COES
 
-Investigado el 2026-10-09. Todas las fuentes son publicas y se bajan con
-`requests`, sin Playwright. La configuracion vive en `config/fuentes.yaml`.
+Reconocimiento hecho el 9 y 10 de octubre de 2026. Configuracion en
+`config/fuentes.yaml`. Muestras de 1 dia (01/10/2026) en `data/samples/`.
 
-## Reglas de cortesia con el servidor
+## Tabla resumen
 
-- `https://www.coes.org.pe/robots.txt` devuelve 404: no hay restricciones
-  publicadas. Igual se aplica una pausa de 2 s entre pedidos y cache en disco.
-- User-Agent propio que identifica al bot (`PulsoElectricoPeru/0.1`).
-- Los dias viejos se bajan una sola vez. Los ultimos 3 dias se consideran
-  provisionales y se refrescan si la copia tiene mas de 6 horas.
-- Una semana completa son 9 pedidos y tarda ~25 s.
+| Fuente | Que trae | Formato | Frecuencia | Retraso | Estado del dato | Historico | Acceso | MVP |
+|---|---|---|---|---|---|---|---|---|
+| Demanda (portal) | Demanda ejecutada, programa diario y semanal del SEIN | xlsx | 30 min | horas (tiempo real) | Preliminar | 2025 confirmado, rango largo | requests GET | Si |
+| Generacion (portal) | MW por tipo de recurso (10) y por central | JSON | 30 min | horas | Preliminar | 2025 confirmado | requests POST, dia por dia | Si |
+| Costo marginal CP (IEOD, zip diario) | CMg total, energia y congestion en 235 barras | xlsx dentro de zip | 30 min (48/dia) | ~1 a 2 dias | Post operacion (puede revisarse a fin de mes) | IEOD desde 2011 | requests GET, visor de archivos | Si (principal) |
+| Costo marginal tiempo real (portal) | CMg en 121 barras >= 138 kV | xlsx | 30 min, **solo ~35 de 48 intervalos** | minutos | Preliminar | 2025 confirmado | requests GET, max 30 dias | Respaldo |
+| IEOD Anexo A | 46 hojas: embalses, caudales, eventos, mantenimientos, indisponibilidades, despacho, combustibles, flujos | xlsx (~1.1 MB/dia) | diario, datos cada 30 min | ~1 a 2 dias | Post operacion | desde 2011 | requests GET, visor de archivos | Si (hidrologia) |
+| CMg revisados | Informe mensual de CMg | carpetas pdf/xlsx | mensual | ~1 mes | Definitivo | desde 2018 | visor de archivos | No |
+| Mantenimientos programados | Programas anual, mensual, semanal, diario | carpetas | segun programa | adelantado | Programado | si | visor de archivos | No |
+| Eventos relevantes / Evaluacion de fallas | Informes de fallas | pdf | por evento | dias | Definitivo | si | visor | No |
+| Estadisticas anuales | Anuario del SEIN | xlsx/pdf | anual | meses | Definitivo | si | visor | No |
 
-## 1. Demanda del SEIN
+## Fuentes elegidas para el MVP (4)
 
-| | |
-|---|---|
-| Pagina | https://www.coes.org.pe/Portal/portalinformacion/demanda |
-| Endpoint | `GET /Portal/portalinformacion/ExportarDemanda?fechaInicial=dd/mm/aaaa&fechaFinal=dd/mm/aaaa` |
-| Formato | xlsx, hoja `DEMANDA` |
-| Columnas | FECHA, EJECUTADO, PROG. DIARIA, PROG. SEMANAL (MW) |
-| Resolucion | 30 min. El intervalo `dd/mm 00:30` es el primero del dia; `dd+1/mm 00:00` es el ultimo |
+1. **Costo marginal** (IEOD, con respaldo en tiempo real): es el precio de la
+   electricidad, el indicador estrella. Se usa la version del IEOD porque la
+   exportacion del portal pierde ~13 intervalos al dia (sobre todo de madrugada),
+   lo que sesgaria el perfil horario.
+2. **Demanda**: cuanto consume el pais; necesaria para maxima demanda y energia.
+3. **Generacion por tecnologia**: mix, renovables y precio capturado.
+4. **Hidrologia** (hoja `PRINCIP_VOLÚMENES` del IEOD): el agua embalsada explica
+   buena parte de los precios en el Peru.
 
-Tambien existe `POST /Portal/portalinformacion/Demanda` (JSON con la misma data
-y series del grafico). Se prefiere el Excel.
+Eventos, mantenimientos e indisponibilidades vienen gratis en el mismo Anexo A;
+quedan disponibles para versiones futuras.
 
-## 2. Generacion por central y tipo de recurso
+## robots.txt y terminos de uso
 
-| | |
-|---|---|
-| Pagina | https://www.coes.org.pe/Portal/portalinformacion/generacion |
-| Endpoint | `POST /Portal/portalinformacion/Generacion` con `fechaInicial`, `fechaFinal`, `indicador=0` |
-| Formato | JSON. Claves: `ListadoPorEmpresa`, `GraficoPorEmpresa`, `GraficoTipoCombustible`, `Indicador` |
-| Resolucion | 30 min |
+- `https://www.coes.org.pe/robots.txt` responde 404: no hay restricciones
+  publicadas para bots.
+- El portal no publica una pagina de terminos de uso (solo "Derechos ARCO",
+  sobre datos personales, que no aplica: aqui no hay datos personales).
+- La informacion es publica por mandato (Ley 28832 y procedimientos tecnicos
+  del COES). Igual el bot: se identifica con su User-Agent, espera 2 s entre
+  pedidos, guarda cache y no vuelve a bajar dias cerrados.
+- Volumen por corrida semanal: ~9 pedidos del portal + 14 del IEOD (~45 MB).
 
-- `GraficoTipoCombustible.Series`: una serie por recurso (BAGAZO, BIOGAS,
-  CARBON, DIESEL, EOLICA, GAS, HIDRICO, NAFTA & GAS REFINERIA, RESIDUAL, SOLAR)
-  con 48 valores en MW.
-- `ListadoPorEmpresa`: detalle por central con columnas H1..H48.
-- **Trampa 1**: aunque se pida un rango, solo devuelve el primer dia. Por eso se
-  pide dia por dia (`max_dias_por_pedido: 1`).
-- **Trampa 2**: el servidor manda los nombres con el caracter de reemplazo
-  `U+FFFD` en lugar de las tildes (`BIOG�S`, `E�LICA`). El JSON es
-  UTF-8 valido, el dano viene de origen. Hay que normalizar nombres en
-  `src/transform` (pendiente).
-- `indicador=1` devuelve listas vacias y `ExportarGeneracion?indicador=1` da
-  error 500. Se usa `indicador=0`.
-- `ExportarGeneracion?indicador=0` da un Excel con produccion diaria por
-  central (MWh). Sirve para validar, no se descarga por ahora.
+## Detalle por fuente
 
-**Validacion**: la suma de generacion por recurso x 0.5 h coincide con la
-demanda ejecutada del mismo dia (ratio 1.000 los 7 dias de la semana
-28/09 - 04/10/2026). El 01/10/2026 dio 182 025 MWh, igual al total del Excel
-oficial.
+### Demanda
+- `GET {portal}/portalinformacion/ExportarDemanda?fechaInicial=dd/mm/aaaa&fechaFinal=dd/mm/aaaa`
+- Hoja `DEMANDA`, encabezado en la fila 4: FECHA, EJECUTADO, PROG. DIARIA, PROG. SEMANAL.
+- Intervalos: `dd/mm 00:30` es el primero del dia y `dd+1/mm 00:00` el ultimo.
 
-## 3. Costo marginal nodal
+### Generacion
+- `POST {portal}/portalinformacion/Generacion` con `fechaInicial`, `fechaFinal`, `indicador=0`.
+- JSON: `GraficoTipoCombustible.Series` (una serie por recurso, 48 valores en MW),
+  `ListadoPorEmpresa` (por central, columnas H1..H48).
+- Trampas: ignora el rango (solo devuelve el primer dia); los nombres llegan con
+  `U+FFFD` en vez de tildes desde el servidor (`BIOG�S`, `E�LICA`);
+  `indicador=1` devuelve vacio.
+- Validado: suma por recurso x 0.5 h = demanda ejecutada del dia (ratio 1.000,
+  semana 28/09 - 04/10/2026).
 
-| | |
-|---|---|
-| Pagina | https://www.coes.org.pe/Portal/mercadomayorista/costosmarginales |
-| Endpoint | `GET /Portal/mercadomayorista/costosmarginales/ExportarMasivo?fechaInicio=dd/mm/aaaa&fechaFin=dd/mm/aaaa&defecto=S` |
-| Formato | xlsx, hoja `COSTOMARGINAL`, encabezado en la fila 5, columna A vacia |
-| Columnas | FECHA HORA, NODO EMD, NOMBRE BARRA, ENERGIA, CONGESTION, TOTAL |
-| Unidad | S/ por MWh |
-| Limite | 30 dias por pedido |
+### Visor de archivos (IEOD y otras carpetas)
+- Listar: `POST {portal}/browser/vistadatos` con `baseDirectory`, `url`,
+  `indicador`, `initialLink`, `orderFolder` (devuelve HTML con las rutas).
+- Bajar: `GET {portal}/browser/download?url=<ruta codificada en UTF-8>`.
+- Estructura IEOD: `Post Operación/Reportes/IEOD/AAAA/MM_Mes/DD/` con
+  `AnexoA_DDMM.xlsx`, `CMgAAAAMMDD.zip` y el informe pdf. Los meses usan
+  "09_Setiembre".
+- El 10/10/2026 el ultimo dia publicado era el 08/10: retraso de ~1 a 2 dias.
 
-- `defecto=S`: 121 barras de 138 kV o mas (~1 MB por semana). `defecto=` vacio
-  baja todas las barras. Cualquier otro valor devuelve un Excel vacio.
-- **Trampa 3**: hay huecos. Para la semana del 01 al 07/10/2026 los dias
-  traen entre 26 y 48 de los 48 intervalos de media hora. Pendiente revisar si
-  la seccion "Costos marginales revisados"
-  (`/Portal/mercadomayorista/costosmarginales/revisados`) viene completa.
+### Costo marginal (IEOD)
+- Zip diario de 5.4 MB con `CMgCP{DDMM}.xlsx` (275 KB) mas archivos de modelos
+  (GAMS, PSSE) que no se usan. Solo se guarda el Excel.
+- Hojas `Cmg_Barra` (total), `Cmg_Ener`, `Cmg_Cong`. Fila 3: nombres de barra;
+  columna B: fecha hora (00:30 ... 23:59, donde 23:59 = 24:00). 48 intervalos.
+- Barra de referencia elegida: **SANTA ROSA 220** (Lima).
 
-## Fuentes candidatas para fases siguientes
+### Costo marginal tiempo real (respaldo)
+- `GET {portal}/mercadomayorista/costosmarginales/ExportarMasivo?fechaInicio=...&fechaFin=...&defecto=S`
+- `defecto=S`: barras >= 138 kV; vacio: todas; otro valor: Excel vacio.
+- El COES calcula 48 procesos al dia (`listaproceso`), pero la exportacion solo
+  trae ~35. Solo se usa para dias que el IEOD aun no publica (marcados preliminares).
 
-- Estadisticas anuales: `/Portal/publicaciones/estadisticas/estadistica?anio=AAAA`
-- Programa diario de operacion: `/Portal/operacion/progoperacion/programadiario`
-- Pronostico de demanda en tiempo real: `GET /Portal/portalinformacion/ObtenerPronosticoTiempoReal`
-- Hidrologia (embalses): `/Portal/Operacion/Estudios/Hidrologia`
+### Hidrologia (IEOD Anexo A, hoja PRINCIP_VOLÚMENES)
+- Filas 5 a 10: empresa, cuenca, instalacion, equipo, tipo, unidad.
+- 25 embalses en volumen util (Hm3) y 3 en nivel (msnm). Valores cada 30 min;
+  `--` cuando no hay lectura.
+- Otras hojas utiles: `PRINCIP_CAUDALES`, `EVENTOS`, `INDISP`,
+  `MANTENIMIENTO EJECUTADOS`, `TIPO_RECURSO`, `COSTO_OPE_EJEC`.

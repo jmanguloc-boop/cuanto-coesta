@@ -3,7 +3,7 @@
 ## Bloques
 
 - [x] Bloque 1: Setup del repo
-- [ ] Bloque 2: Reconocimiento de fuentes del COES
+- [x] Bloque 2: Reconocimiento de fuentes del COES
 - [ ] Bloque 3: Extractor
 - [ ] Bloque 4: Transformacion y modelo de datos
 - [ ] Bloque 5: Indicadores semanales
@@ -30,6 +30,15 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - CLAUDE.md reescrito, LICENSE MIT, requirements.txt con versiones fijadas.
 - Criterio: `python -c "from src.utils import config"` OK.
 
+### Bloque 2: Reconocimiento de fuentes (2026-10-10)
+- Se encontro el visor de archivos del COES (`/browser/vistadatos` y `/browser/download`)
+  que da acceso al IEOD diario desde 2011.
+- 5 fuentes probadas con muestra de 1 dia en data/samples/ (~2 MB): demanda,
+  generacion, costo marginal IEOD, costo marginal tiempo real, IEOD Anexo A.
+- docs/fuentes_coes.md con tabla resumen; config/fuentes.yaml reescrito.
+- MVP: costo marginal, demanda, generacion por tecnologia, hidrologia.
+- Todo con requests; no hace falta Playwright.
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -40,6 +49,15 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   verano). Asi no hace falta el paquete tzdata en Windows.
 - **Python 3.14** en esta PC (cumple 3.11+). El workflow de GitHub usa 3.12.
 
+- **Costo marginal**: fuente principal = zip diario del IEOD (48 intervalos, 235
+  barras). La exportacion del portal pierde ~13 intervalos/dia (madrugada), lo que
+  sesgaria el perfil horario; queda como respaldo preliminar para dias sin IEOD.
+- **Barra de referencia**: SANTA ROSA 220 (Lima), barra de referencia historica del SEIN.
+- **Hidrologia**: volumen util total (Hm3) de los embalses del IEOD. No hay un
+  dato publico simple de capacidad maxima por embalse, asi que se compara contra
+  semana anterior y anio anterior, no como % de llenado.
+
 ## Pendientes
 
-(se completa por bloque)
+- Eventos, mantenimientos e indisponibilidades (ya vienen en el Anexo A) para una version futura.
+- CMg revisados (mensuales, definitivos) no se usan: llegan con ~1 mes de retraso.
