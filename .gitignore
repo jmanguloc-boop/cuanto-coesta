@@ -9,3 +9,5 @@ data/raw/
 data/processed/
 reports/*.pdf
 !reports/.gitkeep
+data/estado_fuentes.json
+data/ahora/
