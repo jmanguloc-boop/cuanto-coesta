@@ -1,22 +1,26 @@
-"""PDF semanal con fpdf2 (sin HTML): portada, 4 secciones, glosario y nota metodologica."""
+"""Informe semanal en PDF (opcional): A4 apaisado con la identidad editorial, fpdf2 sin HTML.
+
+Paginas: portada con el pulso en cuatro cifras; 01 la senal (precios); 02 demanda y
+generacion; 03 hidrologia y mapa; 04 lo que merece atencion; 05 metodo, fuentes y glosario.
+"""
 
 from pathlib import Path
 
-import matplotlib
 from fpdf import FPDF
 
 from src.analysis import calcular_resumen
-from src.narrative import generar_narrativa
-from src.report import graficos as G
-from src.utils import config
+from src.narrative import CATEGORIA_HECHO, en_simple, explicar_hecho, generar_narrativa, niveles, pulir
+from src.utils import config, estado
+from src.utils.estilo import registrar_fuentes_pdf
 from src.utils.fechas import ahora_peru, dia_y_hora
 from src.utils.formato import numero, porcentaje
 from src.utils.logs import obtener_logger
+from src.visual import graficos as G
 
 log = obtener_logger(__name__)
 
-DIR_FUENTES = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
-FUENTE = "DejaVu"
+ANCHO, ALTO, MARGEN = 297, 210, 14
+UTIL = ANCHO - 2 * MARGEN
 
 
 def _rgb(hexa):
@@ -24,263 +28,418 @@ def _rgb(hexa):
     return tuple(int(hexa[i:i + 2], 16) for i in (0, 2, 4))
 
 
-class ReportePDF(FPDF):
+class InformePDF(FPDF):
     def __init__(self, resumen):
-        super().__init__(format="A4")
+        super().__init__(orientation="L", format="A4")
         self.r = resumen
         self.proyecto = config.proyecto()
-        self.paleta = self.proyecto["paleta"]
-        self.add_font(FUENTE, "", str(DIR_FUENTES / "DejaVuSans.ttf"))
-        self.add_font(FUENTE, "B", str(DIR_FUENTES / "DejaVuSans-Bold.ttf"))
-        self.add_font(FUENTE, "I", str(DIR_FUENTES / "DejaVuSans-Oblique.ttf"))
-        self.set_auto_page_break(True, margin=18)
-        self.set_margins(15, 15, 15)
+        self.p = self.proyecto["paleta"]
+        self.f = registrar_fuentes_pdf(self)
+        self.set_auto_page_break(True, margin=16)
+        self.set_margins(MARGEN, 20, MARGEN)
         self.set_title(f"{self.proyecto['nombre']}: {resumen.texto_semana}")
         self.set_author(self.proyecto["nombre"])
 
-    def color_texto(self, clave):
-        """Color de texto de la paleta."""
-        self.set_text_color(*_rgb(self.paleta[clave]))
+    # ----- utilidades -----
+
+    def color(self, clave):
+        self.set_text_color(*_rgb(self.p[clave]))
+
+    def relleno(self, clave):
+        self.set_fill_color(*_rgb(self.p[clave]))
+
+    def fuente(self, rol, tam, estilo=""):
+        self.set_font(self.f[rol], estilo, tam)
+
+    # ----- marco de pagina -----
 
     def header(self):
-        """Encabezado de las paginas interiores."""
-        if self.page_no() == 1:
-            return
-        self.set_font(FUENTE, "B", 9)
-        self.color_texto("primario")
-        self.cell(0, 6, self.proyecto["nombre"], new_x="LMARGIN", new_y="TOP")
-        self.set_font(FUENTE, "", 8)
-        self.color_texto("texto_suave")
-        etiqueta = self.r.texto_semana + (" (preliminar)" if self.r.es_preliminar else "")
-        self.cell(0, 6, etiqueta, align="R", new_x="LMARGIN", new_y="NEXT")
-        self.set_draw_color(*_rgb(self.paleta["secundario"]))
-        self.line(15, self.get_y(), 195, self.get_y())
-        self.ln(4)
+        self.relleno("papel")
+        self.rect(0, 0, ANCHO, ALTO, style="F")
+        self.relleno("tinta")
+        self.rect(0, 0, ANCHO, 11, style="F")
+        self.relleno("lima")
+        self.ellipse(MARGEN, 3.5, 4, 4, style="F")
+        self.set_xy(MARGEN + 7, 3)
+        self.fuente("texto", 8.5, "B")
+        self.set_text_color(255, 255, 255)
+        self.cell(80, 5, self.proyecto["nombre"].upper())
+        self.set_xy(ANCHO - MARGEN - 140, 3)
+        self.fuente("mono", 6.5)
+        self.color("gris")
+        self.cell(140, 5, self.proyecto["tagline"].upper(), align="R")
+        self.set_y(18)
 
     def footer(self):
-        """Pie con fuente, aviso y numero de pagina."""
-        self.set_y(-13)
-        self.set_font(FUENTE, "", 7)
-        self.color_texto("texto_suave")
-        self.cell(0, 5, "Fuente: COES (www.coes.org.pe). Proyecto independiente, no afiliado al COES.", new_x="LMARGIN", new_y="TOP")
-        self.cell(0, 5, f"Página {self.page_no()} de {{nb}}", align="R")
+        self.set_draw_color(*_rgb(self.p["linea"]))
+        self.line(MARGEN, ALTO - 11, ANCHO - MARGEN, ALTO - 11)
+        self.set_xy(MARGEN, ALTO - 10)
+        self.fuente("mono", 6.5)
+        self.color("gris")
+        self.cell(200, 4, "OPEN SOURCE / NO AFILIADO AL COES / DATOS PÚBLICOS DE WWW.COES.ORG.PE")
+        self.set_xy(ANCHO - MARGEN - 30, ALTO - 10)
+        self.cell(30, 4, f"Página {self.page_no()} de {{nb}}", align="R")
 
-    # ---------- piezas ----------
+    # ----- piezas -----
 
-    def titulo_seccion(self, texto):
-        """Titulo grande de seccion."""
-        self.set_font(FUENTE, "B", 16)
-        self.color_texto("primario")
-        self.cell(0, 9, texto, new_x="LMARGIN", new_y="NEXT")
-        self.ln(1)
+    def kicker(self, texto, clave_color="verde", y=None):
+        if y is not None:
+            self.set_y(y)
+        self.fuente("mono", 7.5)
+        self.color(clave_color)
+        self.cell(0, 5, texto.upper(), new_x="LMARGIN", new_y="NEXT")
 
-    def parrafo(self, texto, tam=9.5):
-        """Parrafo de texto corrido."""
-        self.set_font(FUENTE, "", tam)
-        self.color_texto("texto")
-        self.multi_cell(0, 5, texto, align="L", new_x="LMARGIN", new_y="NEXT")
-        self.ln(2)
+    def titular(self, texto, tam=22, ancho=0, clave_color="tinta"):
+        self.fuente("titulares", tam, "B")
+        self.color(clave_color)
+        self.multi_cell(ancho, tam * 0.42, texto, new_x="LMARGIN", new_y="NEXT")
 
-    def imagen(self, png, alto):
-        """Inserta un grafico a todo el ancho."""
-        self.image(png, x=15, w=180, h=alto)
-        self.ln(1)
+    def parrafo(self, texto, tam=9, ancho=0, clave_color="tinta", x=None, alto_linea=4.4):
+        if x is not None:
+            self.set_x(x)
+        self.fuente("texto", tam)
+        self.color(clave_color)
+        self.multi_cell(ancho, alto_linea, pulir(texto), align="L", new_x="LMARGIN" if x is None else "LEFT", new_y="NEXT")
 
-    def cajita(self, claves):
-        """Recuadro 'Que significa esto' con textos del glosario."""
-        glosario = config.glosario()
-        bloques = []
-        for clave in claves:
-            g = glosario["indicadores"].get(clave) or glosario["terminos"][clave]
-            bloques.append((g["nombre"], " ".join(g["explicacion_simple"].split()), g["por_que_importa"]))
-        textos = [f"**{n}.** {e} __Por qué importa:__ {p}" for n, e, p in bloques]
-        self.set_font(FUENTE, "", 8.5)
-        lineas = sum(len(self.multi_cell(172, 4.4, txt, markdown=True, align="L", dry_run=True, output="LINES"))
-                     for txt in textos)
-        alto = 12 + lineas * 4.4 + 1.5 * len(bloques)
-        if self.get_y() + alto > self.h - 20:
-            self.add_page()
-        x, y = 15, self.get_y()
-        self.set_fill_color(*_rgb(self.paleta["fondo_suave"]))
-        self.set_draw_color(*_rgb(self.paleta["secundario"]))
-        self.rect(x, y, 180, alto, style="DF")
-        self.set_xy(x + 4, y + 3)
-        self.set_font(FUENTE, "B", 9)
-        self.color_texto("secundario")
-        self.cell(0, 5, "¿Qué significa esto?", new_x="LMARGIN", new_y="NEXT")
-        for texto in textos:
-            self.set_x(x + 4)
-            self.color_texto("texto")
-            self.set_font(FUENTE, "", 8.5)
-            self.multi_cell(172, 4.4, texto, markdown=True, align="L", new_x="LMARGIN", new_y="NEXT")
-            self.ln(1.5)
+    def imagen(self, fig, x, y, w, h):
+        self.image(G.a_png(fig), x=x, y=y, w=w, h=h)
+
+    def celdas_cifras(self, celdas, y, alto=26):
+        """Fila de cifras: etiqueta mono, valor condensado y pie (estilo 'el pulso en cuatro cifras')."""
+        ancho = UTIL / len(celdas)
+        self.set_draw_color(*_rgb(self.p["linea"]))
+        for i, (etiqueta, valor, pie, color_pie) in enumerate(celdas):
+            x = MARGEN + i * ancho
+            self.relleno("blanco")
+            self.rect(x, y, ancho, alto, style="DF")
+            self.line(x, y + 7, x + ancho, y + 7)
+            self.line(x, y + alto - 7, x + ancho, y + alto - 7)
+            self.set_xy(x + 4, y + 1.5)
+            self.fuente("mono", 6.5)
+            self.color("gris")
+            self.cell(ancho - 8, 4, etiqueta.upper())
+            self.set_xy(x + 4, y + 9)
+            self.fuente("titulares", 19, "B")
+            self.color("tinta")
+            self.cell(ancho - 8, 9, valor)
+            self.set_xy(x + 4, y + alto - 5.8)
+            self.fuente("mono", 6.5)
+            self.set_text_color(*_rgb(color_pie))
+            self.cell(ancho - 8, 4, pie)
         self.set_y(y + alto + 4)
 
-    def tarjeta(self, x, y, ancho, etiqueta, valor, var_texto, color_var, tam_valor=14):
-        """Tarjeta de indicador: etiqueta, valor y variacion."""
-        self.set_fill_color(*_rgb(self.paleta["fondo_suave"]))
-        self.rect(x, y, ancho, 30, style="F")
-        self.set_xy(x + 3, y + 3)
-        self.set_font(FUENTE, "", 8)
-        self.color_texto("texto_suave")
-        self.multi_cell(ancho - 6, 4, etiqueta, align="L", new_x="LEFT", new_y="NEXT")
-        self.set_xy(x + 3, y + 12)
-        self.set_font(FUENTE, "B", tam_valor)
-        self.color_texto("texto")
-        self.cell(ancho - 6, 8, valor, new_x="LEFT", new_y="NEXT")
-        self.set_x(x + 3)
-        self.set_font(FUENTE, "", 7.5)
-        self.set_text_color(*_rgb(color_var))
-        self.cell(ancho - 6, 5, var_texto)
+    def caja_niveles(self, textos, x, y, w):
+        """'Que significa esto' en tres niveles."""
+        partes = [("LECTURA RÁPIDA", textos.get("rapida")), ("CON MÁS DETALLE", textos.get("intermedia")),
+                  ("NOTA TÉCNICA", textos.get("tecnica"))]
+        partes = [(e, t) for e, t in partes if t]
+        self.fuente("texto", 8)
+        alto = 10 + sum(5 + len(self.multi_cell(w - 8, 3.8, t, dry_run=True, output="LINES")) * 3.8 for _, t in partes)
+        self.set_fill_color(231, 232, 224)
+        self.set_draw_color(*_rgb(self.p["linea"]))
+        self.rect(x, y, w, alto, style="DF")
+        self.set_xy(x + 4, y + 3)
+        self.fuente("mono", 7)
+        self.color("verde")
+        self.cell(w - 8, 4, "¿QUÉ SIGNIFICA ESTO?")
+        cy = y + 8
+        for etiqueta, texto in partes:
+            self.set_xy(x + 4, cy)
+            self.fuente("mono", 5.8)
+            self.color("gris")
+            self.cell(w - 8, 3.5, etiqueta)
+            self.set_xy(x + 4, cy + 3.6)
+            self.fuente("texto", 8)
+            self.color("tinta" if etiqueta != "NOTA TÉCNICA" else "gris")
+            self.multi_cell(w - 8, 3.8, texto, align="L")
+            cy = self.get_y() + 1
+        return y + alto
 
 
-def _var(ind, puntos=False, invertir=False, paleta=None):
-    """('▲ 3.2% vs sem. ant.', color)."""
+def _var(ind, p, invertir=False, puntos=False):
     if ind is None or ind.var_anterior is None:
-        return "sin comparación", paleta["texto_suave"]
+        return "SIN COMPARACIÓN", p["gris"]
     v = ind.var_anterior
-    flecha = "▲" if v > 0 else "▼"
-    texto = f"{flecha} {abs(v) * 100:.1f} {'pp' if puntos else '%'} vs sem. ant.".replace(" %", "%")
+    unidad = " PP" if puntos else "%"
+    texto = f"{'▲' if v > 0 else '▼'} {v * 100:+.1f}{unidad} VS. SEMANA PREVIA"
     bueno = (v < 0) if invertir else (v > 0)
-    return texto, paleta["baja"] if bueno else paleta["sube"]
+    return texto, p["baja"] if bueno else p["sube"]
 
+
+def _soles(v):
+    return "s/d" if v is None else f"S/ {numero(v, 1)}"
+
+
+# ---------- paginas ----------
 
 def _portada(pdf, r, n):
-    proyecto, p = pdf.proyecto, pdf.paleta
+    p = pdf.p
     pdf.add_page()
-    pdf.set_fill_color(*_rgb(p["primario"]))
-    pdf.rect(0, 0, 210, 62, style="F")
-    pdf.set_xy(15, 16)
-    pdf.set_font(FUENTE, "B", 28)
+    pdf.set_xy(MARGEN, 18)
+    nombre = pdf.proyecto["nombre"].split(" ", 1)
+    pdf.fuente("titulares", 34, "B")
+    pdf.color("tinta")
+    pdf.cell(pdf.get_string_width(nombre[0] + " "), 14, nombre[0] + " ")
+    pdf.color("verde")
+    pdf.cell(0, 14, nombre[1] if len(nombre) > 1 else "", new_x="LMARGIN", new_y="NEXT")
+    pdf.fuente("mono", 7)
+    pdf.color("verde")
+    pdf.cell(0, 4, pdf.proyecto["tagline"].upper(), new_x="LMARGIN", new_y="NEXT")
+
+    y = pdf.get_y() + 3
+    pdf.relleno("tinta")
+    pdf.rect(MARGEN, y, UTIL, 62, style="F")
+    pdf.set_xy(MARGEN + 8, y + 6)
+    pdf.fuente("mono", 7.5)
+    pdf.color("lima")
+    estado_txt = "PRELIMINAR" if r.es_preliminar else "DATOS COMPLETOS"
+    pdf.cell(0, 4, f"INFORME SEMANAL / {r.semana.replace('-W', ' · SEMANA ')} / {estado_txt}")
+    pdf.set_xy(MARGEN + 8, y + 14)
+    pdf.fuente("titulares", 30, "B")
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 12, proyecto["nombre"], new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font(FUENTE, "", 11)
-    pdf.cell(0, 7, proyecto["tagline"], new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(3)
-    pdf.set_font(FUENTE, "B", 13)
-    pdf.set_text_color(*_rgb(p["acento"]))
-    pdf.cell(0, 8, r.texto_semana, new_x="LMARGIN", new_y="NEXT")
-    pdf.set_y(72)
+    pdf.multi_cell(UTIL - 100, 12, n.titulares[0] if n.titulares else r.texto_semana, align="L")
+    pdf.set_x(MARGEN + 8)
+    pdf.fuente("texto", 9)
+    pdf.set_text_color(193, 199, 184)
+    lead = f"{r.texto_semana}. Una lectura de precios, demanda y generación del SEIN con datos públicos del COES."
     if r.es_preliminar:
-        pdf.set_font(FUENTE, "B", 9)
-        pdf.set_text_color(*_rgb(p["acento"]))
-        pdf.multi_cell(0, 5, f"REPORTE PRELIMINAR: {r.dias_con_datos} de 7 días con datos o días que el COES aún no "
-                             "confirma. Los números pueden cambiar.", new_x="LMARGIN", new_y="NEXT")
-        pdf.ln(2)
-    pdf.set_font(FUENTE, "B", 11)
-    pdf.color_texto("texto_suave")
-    pdf.cell(0, 7, "Lo más importante de la semana", new_x="LMARGIN", new_y="NEXT")
-    for titular in n.titulares:
-        pdf.set_font(FUENTE, "B", 13)
-        pdf.color_texto("texto")
-        pdf.multi_cell(0, 7, f"•  {titular}", align="L", new_x="LMARGIN", new_y="NEXT")
-        pdf.ln(2)
-    pdf.ln(4)
-    y = pdf.get_y()
-    g = config.glosario()["indicadores"]
-    tarjetas = [
-        (g["cmg_promedio"]["nombre"] + " (S/ por MWh)", f"S/ {numero(r.ind('cmg_promedio').valor, 1)}", _var(r.ind("cmg_promedio"), invertir=True, paleta=p)),
-        (g["demanda_maxima"]["nombre"], f"{numero(r.ind('demanda_maxima').valor)} MW", _var(r.ind("demanda_maxima"), paleta=p)),
-        (g["participacion_renovable"]["nombre"], porcentaje(r.ind("participacion_renovable").valor), _var(r.ind("participacion_renovable"), puntos=True, paleta=p)),
-        (g["volumen_embalses"]["nombre"], f"{numero(r.ind('volumen_embalses').valor, 1)} Hm3", _var(r.ind("volumen_embalses"), paleta=p)),
-    ]
-    ancho = 42.75
-    for i, (etiqueta, valor, (var_texto, color)) in enumerate(tarjetas):
-        pdf.tarjeta(15 + i * (ancho + 3), y, ancho, etiqueta, valor, var_texto, color)
-    y += 34
-    sol, prom = r.ind("precio_capturado_solar"), r.ind("cmg_promedio")
-    segunda = [
-        (g["energia_semana"]["nombre"], f"{numero(r.ind('energia_semana').valor)} GWh", _var(r.ind("energia_semana"), paleta=p)),
-        (g["horas_precio_alto"]["nombre"], f"{numero(r.ind('horas_precio_alto').valor, 1)} h",
-         _var(r.ind("horas_precio_alto"), invertir=True, paleta=p)),
-        (g["participacion_renovable_sin_hidro"]["nombre"], porcentaje(r.ind("participacion_renovable_sin_hidro").valor),
-         _var(r.ind("participacion_renovable_sin_hidro"), puntos=True, paleta=p)),
-        (g["precio_capturado_solar"]["nombre"] + " (S/ por MWh)", f"S/ {numero(sol.valor, 1)}" if sol.valor else "s/d",
-         (f"{abs(1 - sol.valor / prom.valor) * 100:.1f}% {'bajo' if sol.valor < prom.valor else 'sobre'} el promedio"
-          if sol.valor and prom.valor else "", p["texto_suave"])),
-    ]
-    for i, (etiqueta, valor, (var_texto, color)) in enumerate(segunda):
-        pdf.tarjeta(15 + i * (ancho + 3), y, ancho, etiqueta, valor, var_texto, color, tam_valor=12)
-    pdf.set_y(y + 36)
-    pdf.set_font(FUENTE, "I", 8)
-    pdf.color_texto("texto_suave")
-    pdf.multi_cell(0, 4.2, "Las variaciones comparan con la semana anterior. Verde: cambio favorable para quien usa "
-                           "electricidad (por ejemplo, precio más bajo o más renovable). Rojo: cambio desfavorable.",
-                   align="L", new_x="LMARGIN", new_y="NEXT")
-    pdf.set_y(-45)
-    pdf.set_font(FUENTE, "", 8)
-    pdf.multi_cell(0, 4.2, " ".join(proyecto["aviso"].split()) + f" Generado el {dia_y_hora(ahora_peru())} (hora de Perú).",
-                   new_x="LMARGIN", new_y="NEXT")
+        lead += f" Reporte preliminar: {r.dias_con_datos} de 7 días con datos completos."
+    pdf.multi_cell(UTIL - 100, 4.6, lead, align="L")
+    prom = r.ind("cmg_promedio")
+    pdf.set_xy(ANCHO - MARGEN - 88, y + 10)
+    pdf.fuente("mono", 6.5)
+    pdf.color("lima")
+    pdf.cell(80, 4, "COSTO MARGINAL MEDIO / SANTA ROSA 220 KV", align="R")
+    pdf.set_xy(ANCHO - MARGEN - 88, y + 17)
+    pdf.fuente("titulares", 40, "B")
+    pdf.set_text_color(241, 240, 232)
+    pdf.cell(80, 18, _soles(prom.valor), align="R")
+    pdf.set_xy(ANCHO - MARGEN - 88, y + 35)
+    pdf.fuente("mono", 6.5)
+    pdf.set_text_color(193, 199, 184)
+    pdf.cell(80, 4, "POR MWH · PROMEDIO DE LA SEMANA", align="R")
+    texto, _ = _var(prom, p, invertir=True)
+    pdf.fuente("mono", 7)
+    ancho_insignia = pdf.get_string_width(texto) + 6
+    pdf.relleno("lima")
+    pdf.rect(ANCHO - MARGEN - 8 - ancho_insignia, y + 42, ancho_insignia, 7, style="F")
+    pdf.set_xy(ANCHO - MARGEN - 8 - ancho_insignia, y + 43.2)
+    pdf.color("tinta")
+    pdf.cell(ancho_insignia, 4.5, texto, align="C")
+
+    pdf.kicker("El pulso en cuatro cifras", y=y + 68)
+    dm, ren, emb = r.ind("demanda_maxima"), r.ind("participacion_renovable"), r.ind("volumen_embalses")
+    pdf.celdas_cifras([
+        ("Costo marginal medio", f"{_soles(prom.valor)} /MWh", *_var(prom, p, invertir=True)),
+        ("Pico de demanda", f"{numero(dm.valor)} MW", *_var(dm, p)),
+        ("Generación renovable*", porcentaje(ren.valor), *_var(ren, p, puntos=True)),
+        ("Agua en embalses", f"{numero(emb.valor, 1)} Hm3" if emb.valor else "s/d", *_var(emb, p)),
+    ], pdf.get_y() + 1)
+    pdf.fuente("texto", 7.5)
+    pdf.color("gris")
+    sin = r.ind("participacion_renovable_sin_hidro")
+    pdf.multi_cell(0, 3.8, f"*Incluye hidro; sin hidro: {porcentaje(sin.valor)}. Verde: cambio favorable para quien usa "
+                           f"electricidad; rojo: desfavorable. Generado el {dia_y_hora(ahora_peru())} (hora de Perú). "
+                           + " ".join(pdf.proyecto["aviso"].split()), align="L")
+    dato = en_simple(r)
+    if dato:
+        y2 = pdf.get_y() + 3
+        pdf.relleno("lima")
+        pdf.rect(MARGEN, y2, UTIL, 22, style="F")
+        pdf.set_xy(MARGEN + 6, y2 + 3)
+        pdf.fuente("mono", 6.5)
+        pdf.color("verde")
+        pdf.cell(0, 4, "EN SIMPLE")
+        pdf.set_xy(MARGEN + 6, y2 + 7.5)
+        pdf.fuente("titulares", 13, "B")
+        pdf.color("tinta")
+        pdf.cell(0, 6, dato["titulo"].upper())
+        pdf.set_xy(MARGEN + 6, y2 + 14)
+        pdf.fuente("texto", 8)
+        pdf.multi_cell(UTIL - 12, 3.8, " ".join(dato["texto"].split()), align="L")
 
 
-def _glosario_y_metodologia(pdf, r):
+def _pagina_precios(pdf, r, n):
     pdf.add_page()
-    pdf.titulo_seccion("Nota metodológica")
-    pdf.parrafo(
-        "Fuentes: portal de información del COES (demanda y generación por tecnología) y el Informe de Evaluación "
-        "de la Operación Diaria, IEOD (costo marginal y embalses). Si el IEOD de un día aún no se publica, el costo "
-        f"marginal se toma del reporte en tiempo real y el día se marca como preliminar. El precio se sigue en la "
-        f"barra {r.barra_referencia.title()} kV (Lima). Precio alto: más de S/ {r.umbrales_precio['alto']} por MWh; "
-        f"precio bajo: menos de S/ {r.umbrales_precio['bajo']} por MWh. La variación de los embalses compara solo "
-        "embalses con dato en ambas semanas. Los textos se generan con reglas fijas, sin inteligencia artificial. "
-        + " ".join(pdf.proyecto["aviso"].split()), tam=8.5)
-    pdf.titulo_seccion("Glosario")
+    pdf.kicker("01 / La señal")
+    pdf.titular("¿Qué movió el costo esta semana?", 22)
+    pdf.parrafo(n.parrafos["precios"], 8.6, alto_linea=4.1)
+    y = pdf.get_y() + 2
+    mitad = (UTIL - 6) / 2
+    if not r.serie_cmg.empty:
+        pdf.imagen(G.precio_semana(r.serie_cmg, r.umbrales_precio, n.titulos_graficos["precios_serie"]),
+                   MARGEN, y, mitad, mitad * 0.39)
+    if "precios_perfil" in n.titulos_graficos:
+        pdf.imagen(G.perfil_horario(r.perfil_cmg, n.titulos_graficos["precios_perfil"]),
+                   MARGEN + mitad + 6, y, mitad, mitad * 0.39)
+    pdf.caja_niveles(niveles(r, "cmg_promedio"), MARGEN, y + mitad * 0.39 + 4, UTIL)
+
+
+def _pagina_demanda_generacion(pdf, r, n):
+    pdf.add_page()
+    pdf.kicker("02 / Demanda y generación")
+    pdf.titular("Cuánto consumió el país y de dónde salió la energía", 22)
+    mitad = (UTIL - 6) / 2
+    y = pdf.get_y() + 2
+    if not r.serie_demanda.empty:
+        pdf.imagen(G.demanda(r.serie_demanda, n.titulos_graficos["demanda"]), MARGEN, y, mitad, mitad * 0.39)
+    if r.mix:
+        pdf.imagen(G.generacion(r.serie_generacion, n.titulos_graficos["generacion"]),
+                   MARGEN + mitad + 6, y, mitad, mitad * 0.39)
+    y += mitad * 0.39 + 3
+    pdf.set_xy(MARGEN, y)
+    pdf.parrafo(n.parrafos["demanda"], 8.4, ancho=mitad, alto_linea=4)
+    y_izq = pdf.get_y()
+    pdf.set_xy(MARGEN + mitad + 6, y)
+    pdf.parrafo(n.parrafos["generacion"], 8.4, ancho=mitad, x=MARGEN + mitad + 6, alto_linea=4)
+    y = max(y_izq, pdf.get_y()) + 3
+    if y < ALTO - 60:
+        pdf.caja_niveles(niveles(r, "precio_capturado_solar"), MARGEN, y, UTIL)
+
+
+def _pagina_hidro_mapa(pdf, r, n):
+    pdf.add_page()
+    pdf.kicker("03 / Hidrología y el mapa del costo")
+    izq = 168
+    pdf.titular(n.titulos_graficos.get("embalses", "Hidrología"), 22, ancho=izq)
+    y = pdf.get_y() + 2
+    if not r.serie_embalses.empty:
+        pdf.imagen(G.embalses(r.serie_embalses, n.titulos_graficos["embalses"]), MARGEN, y, izq, izq * 0.39)
+    pdf.set_xy(MARGEN, y + izq * 0.39 + 3)
+    pdf.parrafo(n.parrafos["hidrologia"], 8.4, ancho=izq, alto_linea=4)
+    y_texto = pdf.get_y() + 3
+    if not r.cmg_barras.empty and r.cmg_barras["latitud"].notna().any():
+        ancho_mapa = UTIL - izq - 6
+        alto_mapa = min(ancho_mapa * 5.6 / 4.6, ALTO - 36)
+        pdf.imagen(G.mapa(r.cmg_barras, n.titulos_graficos.get("mapa", "")), MARGEN + izq + 6, 18,
+                   alto_mapa * 4.6 / 5.6, alto_mapa)
+    g = config.glosario()["indicadores"]["mapa_cmg"]
+    textos = {"rapida": n.titulos_graficos.get("mapa", ""), "intermedia": " ".join(g["explicacion_simple"].split()),
+              "tecnica": " ".join(g["nota_tecnica"].split())}
+    pdf.caja_niveles(textos, MARGEN, y_texto, izq)
+
+
+def _pagina_atencion(pdf, r, n):
+    pdf.add_page()
+    pdf.kicker("04 / Lo que merece atención")
+    pdf.titular("Tres señales, con evidencia y sin inventar causalidad", 22)
+    pdf.parrafo("Las reglas automáticas detectan cambios medibles y producen textos transparentes: qué cambió, contra qué "
+                "se compara y qué limitación tiene la lectura.", 8.6)
+    y = pdf.get_y() + 3
+    for i, (h, titular) in enumerate(zip(r.hechos, n.titulares, strict=False), start=1):
+        explicacion = explicar_hecho(h, r)
+        pdf.fuente("texto", 8.4)
+        lineas = len(pdf.multi_cell(UTIL - 40, 4, explicacion, dry_run=True, output="LINES"))
+        alto = 15 + lineas * 4
+        pdf.relleno("blanco")
+        pdf.set_draw_color(*_rgb(pdf.p["linea"]))
+        pdf.rect(MARGEN, y, UTIL, alto, style="DF")
+        pdf.set_xy(MARGEN + 6, y + 4)
+        pdf.fuente("mono", 14, "B")
+        pdf.color("verde")
+        pdf.cell(18, 7, f"{i:02d}")
+        pdf.set_xy(MARGEN + 30, y + 3)
+        pdf.fuente("mono", 6.5)
+        pdf.cell(0, 4, CATEGORIA_HECHO.get(h.clave, "Sistema").upper())
+        pdf.set_xy(MARGEN + 30, y + 7)
+        pdf.fuente("texto", 10, "B")
+        pdf.color("tinta")
+        pdf.cell(0, 5, titular)
+        pdf.set_xy(MARGEN + 30, y + 12.5)
+        pdf.fuente("texto", 8.4)
+        pdf.multi_cell(UTIL - 40, 4, explicacion, align="L")
+        y += alto + 3
+    pdf.set_y(y + 2)
+    pdf.kicker("Rarezas y versiones del dato")
+    rarezas = (f"El detector marcó {r.n_rarezas} medias horas que rompieron el rango de su misma hora en las 4 semanas "
+               "previas. " + (f"La más llamativa: {dia_y_hora(r.rarezas[0]['fecha_hora'])}. {r.rarezas[0]['regla']}"
+                              if r.rarezas else "Ninguna esta semana."))
+    pdf.parrafo(rarezas, 8.4)
+    if r.revision:
+        rv = r.revision
+        pdf.parrafo(f"Lo que el sistema creía: de {rv['intervalos']} medias horas con versión preliminar y confirmada, el "
+                    f"COES cambió {rv['cambiados']}. En promedio el precio se movió {_soles(rv['diferencia_media_abs'])} por "
+                    f"MWh ({porcentaje(rv['diferencia_media_pct'])}); el mayor cambio, {_soles(rv['max_abs'])}, fue el "
+                    f"{dia_y_hora(rv['momento_max'])}".rstrip(".") + ".", 8.4)
+
+
+def _pagina_metodo(pdf, r):
+    pdf.add_page()
+    pdf.kicker("05 / Método y fuentes")
+    pdf.titular("La confianza también forma parte del diseño", 20)
+    y = pdf.get_y() + 2
+    fuentes = config.fuentes()
+    est = estado.leer()
+    filas = [(nombre, f) for nombre, f in fuentes["fuentes"].items() if nombre != "costo_marginal_tr"]
+    filas += [(f"ahora_{nombre}", f) for nombre, f in fuentes["ahora"].items() if isinstance(f, dict)]
+    columnas = [("FUENTE", 34), ("QUÉ TRAE", 105), ("FRECUENCIA", 24), ("RETRASO", 22), ("ESTADO", 26), ("ÚLTIMA EXTRACCIÓN OK", 58)]
+    pdf.set_xy(MARGEN, y)
+    pdf.relleno("tinta")
+    pdf.fuente("mono", 6)
+    pdf.set_text_color(255, 255, 255)
+    for titulo, w in columnas:
+        pdf.cell(w, 6, " " + titulo, fill=True)
+    pdf.ln()
+    pdf.fuente("texto", 7)
+    pdf.color("tinta")
+    pdf.relleno("blanco")
+    pdf.set_draw_color(*_rgb(pdf.p["linea"]))
+    for nombre, f in filas:
+        exito = est.get(nombre, {}).get("ultima_extraccion_exitosa", "sin registro").replace("T", " ")[:16]
+        valores = [nombre.replace("_", " "), f.get("descripcion", "")[:100], f.get("frecuencia_objetivo", ""),
+                   f.get("retraso_esperado", ""), f.get("estado_dato", "").replace("_", " "), exito]
+        pdf.set_x(MARGEN)
+        for (_, w), v in zip(columnas, valores, strict=True):
+            pdf.cell(w, 5.2, " " + v, border="B", fill=True)
+        pdf.ln()
+    ancho_col = (UTIL - 12) / 3
+    y = pdf.get_y() + 4
+    pdf.set_xy(MARGEN, y)
+    pdf.kicker("Calidad de esta semana")
+    texto = "; ".join(r.avisos) if r.avisos else "Sin avisos: no hubo duplicados, huecos ni valores fuera de rango."
+    pdf.parrafo(texto[:500], 7.2, ancho=ancho_col, alto_linea=3.5)
+    pdf.set_x(MARGEN)
+    pdf.kicker("Reglas editoriales")
+    pdf.parrafo("Nunca ocultar de dónde sale el dato. Mostrar los huecos en vez de rellenarlos. Comparar ventanas "
+                "equivalentes. Describir la señal, no inventar la causa.", 7.2, ancho=ancho_col, alto_linea=3.5)
+    y_ind = pdf.get_y() + 2
+    pdf.relleno("lima")
+    pdf.fuente("texto", 7.2)
+    aviso = "Independencia: " + " ".join(pdf.proyecto["aviso"].split())
+    lineas = len(pdf.multi_cell(ancho_col - 6, 3.5, aviso, dry_run=True, output="LINES"))
+    pdf.rect(MARGEN, y_ind, ancho_col, lineas * 3.5 + 6, style="F")
+    pdf.set_xy(MARGEN + 3, y_ind + 3)
+    pdf.color("tinta")
+    pdf.multi_cell(ancho_col - 6, 3.5, aviso, align="L")
+    pdf.set_xy(MARGEN + ancho_col + 6, y)
+    pdf.fuente("mono", 7.5)
+    pdf.color("verde")
+    pdf.cell(0, 5, "GLOSARIO")
+    pdf.set_y(y + 6)
     glosario = config.glosario()
-    pdf.set_font(FUENTE, "", 7.0)
-    pdf.color_texto("texto")
-    with pdf.text_columns(ncols=2, gutter=6, text_align="L", line_height=1.1) as cols:
+    with pdf.text_columns(ncols=2, gutter=6, text_align="L", line_height=1.05,
+                          l_margin=MARGEN + ancho_col + 6, r_margin=MARGEN) as cols:
         for grupo in ("indicadores", "terminos"):
-            for entrada in glosario[grupo].values():
-                pdf.set_font(FUENTE, "B", 7.0)
-                cols.write(entrada["nombre"] + ". ")
-                pdf.set_font(FUENTE, "", 7.0)
-                cols.write(" ".join(entrada["explicacion_simple"].split()))
-                cols.ln()
+            for g in glosario[grupo].values():
+                pdf.fuente("texto", 6.2, "B")
+                pdf.color("tinta")
+                cols.write(g["nombre"] + ". ")
+                pdf.fuente("texto", 6.2)
+                cols.write(" ".join(g["explicacion_simple"].split()))
                 cols.ln()
 
 
 def generar_pdf(semana, destino=None, raiz=None):
-    """Arma el PDF de la semana y devuelve su ruta."""
+    """Arma el PDF de la semana (opcional) y devuelve su ruta."""
     r = calcular_resumen(semana, raiz)
     n = generar_narrativa(r)
-    t = n.titulos_graficos
-    pdf = ReportePDF(r)
-
+    pdf = InformePDF(r)
     _portada(pdf, r, n)
-
-    pdf.add_page()
-    pdf.titulo_seccion("Precios")
-    pdf.imagen(G.precio_semana(r.serie_cmg, r.umbrales_precio, t["precios_serie"]), 62)
-    if "precios_perfil" in t:
-        pdf.imagen(G.perfil_horario(r.perfil_cmg, t["precios_perfil"]), 52)
-    pdf.parrafo(n.parrafos["precios"])
-    pdf.cajita(["cmg_promedio", "perfil_horario"])
-
-    pdf.add_page()
-    pdf.titulo_seccion("Demanda")
-    if "demanda" in t:
-        pdf.imagen(G.demanda(r.serie_demanda, t["demanda"]), 72)
-    pdf.parrafo(n.parrafos["demanda"])
-    pdf.cajita(["demanda_maxima", "energia_semana", "error_programa_diario"])
-
-    pdf.add_page()
-    pdf.titulo_seccion("Generación")
-    if r.mix:
-        pdf.imagen(G.generacion(r.serie_generacion, t["generacion"]), 72)
-        pdf.imagen(G.mix(r.mix, r.mix_anterior, "Participación de cada fuente (en gris, la semana anterior)"), 52)
-    pdf.parrafo(n.parrafos["generacion"])
-    pdf.cajita(["participacion_renovable", "precio_capturado_solar"])
-
-    pdf.add_page()
-    pdf.titulo_seccion("Hidrología")
-    if not r.serie_embalses.empty:
-        pdf.imagen(G.embalses(r.serie_embalses, t["embalses"]), 60)
-        pdf.imagen(G.embalses_detalle(r.embalses_detalle, "Los embalses con más agua, frente a la semana anterior"), 62)
-    pdf.parrafo(n.parrafos["hidrologia"])
-    pdf.cajita(["volumen_embalses"])
-
-    _glosario_y_metodologia(pdf, r)
-
+    _pagina_precios(pdf, r, n)
+    _pagina_demanda_generacion(pdf, r, n)
+    _pagina_hidro_mapa(pdf, r, n)
+    _pagina_atencion(pdf, r, n)
+    _pagina_metodo(pdf, r)
     destino = Path(destino or config.DIR_REPORTS / f"{config.proyecto()['slug']}_{semana}.pdf")
     destino.parent.mkdir(parents=True, exist_ok=True)
     pdf.output(str(destino))

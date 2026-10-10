@@ -27,8 +27,9 @@ def test_pdf_maximo_6_paginas(pdf):
 
 def test_pdf_tiene_todas_las_secciones(pdf):
     texto = "\n".join(texto_paginas(pdf))
-    for seccion in ("Precios", "Demanda", "Generación", "Hidrología", "Glosario", "Nota metodológica",
-                    "¿Qué significa esto?", "no afiliado al COES", "Página 2 de"):
+    for seccion in ("01 / LA SEÑAL", "02 / DEMANDA Y GENERACIÓN", "03 / HIDROLOGÍA", "04 / LO QUE MERECE ATENCIÓN",
+                    "05 / MÉTODO Y FUENTES", "GLOSARIO", "¿QUÉ SIGNIFICA ESTO?", "NO AFILIADO AL COES", "Página 2 de",
+                    "EL PULSO EN CUATRO CIFRAS", "LECTURA RÁPIDA", "NOTA TÉCNICA"):
         assert seccion in texto, seccion
     assert "PRELIMINAR" in texto  # la muestra tiene 1 de 7 dias
 
@@ -36,7 +37,7 @@ def test_pdf_tiene_todas_las_secciones(pdf):
 def test_pdf_sin_guion_largo_ni_asteriscos(pdf):
     texto = "\n".join(texto_paginas(pdf))
     assert "—" not in texto
-    assert "*Por qué" not in texto
+    assert "m.." not in texto
 
 
 def test_portada_png(pdf, tmp_path):

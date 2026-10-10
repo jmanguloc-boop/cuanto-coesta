@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from src.narrative import pulir
 from src.utils.estilo import paleta
 
 P = paleta()
@@ -50,7 +51,7 @@ def titular(padre, texto, tam=30, color=None, bg=None, ancho=760):
 
 def parrafo(padre, texto, tam=10, color=None, bg=None, ancho=760):
     """Texto corrido."""
-    return tk.Label(padre, text=texto, font=(F["texto"], tam), fg=color or "#484B43", bg=bg or padre["bg"],
+    return tk.Label(padre, text=pulir(texto), font=(F["texto"], tam), fg=color or "#484B43", bg=bg or padre["bg"],
                     anchor="w", justify="left", wraplength=ancho)
 
 

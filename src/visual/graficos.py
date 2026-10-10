@@ -52,14 +52,17 @@ def _encabezado(fig, ax, titulo, kicker="", oscuro=False):
     p = paleta()
     fig.titulo = titulo
     # Titulos largos en dos lineas segun el ancho de la figura (~9 caracteres por pulgada)
-    lineas = textwrap.wrap(titulo, width=max(int(fig.get_figwidth() * 9), 20))[:2]
-    alto_linea = 0.30 / fig.get_figheight()          # alto de una linea del titular en coordenadas del eje
+    lineas = textwrap.wrap(titulo, width=max(int(fig.get_figwidth() * 10.5), 20))[:2]
+    top = 0.78 - 0.07 * (len(lineas) - 1)
+    bottom = 0.14
+    fig.subplots_adjust(top=top, left=0.08, right=0.98, bottom=bottom)
+    # alto de una linea del titular (13.5 pt ~ 0.22 pulgadas) en coordenadas del eje
+    alto_linea = 0.22 / max((top - bottom) * fig.get_figheight(), 0.5)
     ax.text(0, 1.06, "\n".join(lineas), transform=ax.transAxes, fontsize=13.5, va="bottom", linespacing=1.0,
             color=p["blanco"] if oscuro else p["tinta"], **fuente_mpl("titulares", weight="bold"))
     if kicker:
         ax.text(0, 1.08 + alto_linea * len(lineas), kicker.upper(), transform=ax.transAxes, fontsize=7.5, va="bottom",
                 color=p["lima"] if oscuro else p["verde"], **fuente_mpl("mono"))
-    fig.subplots_adjust(top=0.78 - 0.07 * (len(lineas) - 1), left=0.08, right=0.98, bottom=0.14)
 
 
 def _leyenda(ax, oscuro=False, **extra):
