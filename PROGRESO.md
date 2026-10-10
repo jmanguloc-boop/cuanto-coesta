@@ -6,7 +6,7 @@
 - [x] Bloque 2: Reconocimiento de fuentes del COES
 - [x] Bloque 3: Extractor
 - [x] Bloque 4: Transformacion y modelo de datos
-- [ ] Bloque 5: Indicadores semanales
+- [x] Bloque 5: Indicadores semanales
 - [ ] Bloque 6: Narrativa automatica
 - [ ] Bloque 7: Dashboard Streamlit
 - [ ] Bloque 8: PDF semanal
@@ -67,6 +67,24 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   solar del portal cuadra al MWh con el IEOD los 7 dias.
 - 22 tests en verde.
 
+### Bloque 5: Indicadores semanales (2026-10-10)
+- src/analysis/: modelo.py (Indicador, Hecho, ResumenSemanal), indicadores.py,
+  hechos.py, CLI `python -m src.analysis --semana AAAA-Www`.
+- 15 indicadores: CMg promedio/max/min (con momento), horas con precio bajo/alto,
+  perfil horario, demanda maxima (con momento), energia semanal, error del
+  programa diario, mix, renovable con y sin hidro, precio capturado solar y
+  eolica, volumen de embalses. Cada uno vs semana anterior y vs anio anterior.
+- Hechos destacados por reglas: variaciones sobre umbral de relevancia, records
+  (con >= 4 semanas de historia), dia anomalo de precio, y datos de respaldo para
+  completar siempre 3.
+- config/analisis.yaml (barra, umbrales, relevancia). glosario.yaml reescrito con
+  el formato pedido (nombre, explicacion_simple, por_que_importa, unidad,
+  ejemplo_cotidiano) para 15 indicadores y 16 terminos.
+- Datos de comparacion bajados: 2026-W39 y 2025-W40.
+- W40: CMg promedio S/ 330.9 por MWh (-43.4% vs W39, +273.8% vs 2025), demanda
+  maxima 8,346 MW, renovable 48.7%.
+- 33 tests en verde (incluye: todo indicador tiene glosario, sin guion largo).
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -96,6 +114,18 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   tabla centrales quedan como "termica". El mix por combustible sale de la tabla generacion.
 - **Correccion SOLAR/BAGAZO** por deteccion de forma, no con un intercambio fijo,
   para no romper si el COES arregla su portal.
+
+- **Umbrales de precio**: bajo < S/ 100 por MWh, alto > S/ 500 por MWh, sobre Santa Rosa 220
+  (config/analisis.yaml). Son fijos y no relativos para que "precio alto" signifique lo mismo cada semana.
+- **Embalses**: valor = suma de la ultima lectura de la semana de cada embalse con
+  volumen util. La variacion se calcula solo con embalses que tienen dato en ambas
+  semanas, para no confundir un embalse sin lectura con agua que desaparecio.
+- **Precio capturado**: promedio del CMg de Santa Rosa ponderado por la generacion de
+  la tecnologia en cada media hora.
+- **Hechos**: un hecho por indicador; los "records" solo se afirman con 4 o mas
+  semanas previas disponibles.
+- **Glosario sin cifras dudosas**: se quito "1 MW = 1,000 casas" (no verificado);
+  solo quedan conversiones exactas (1 GWh = 1 millon de kWh, 1 Hm3 = mil millones de litros).
 
 ## Pendientes
 

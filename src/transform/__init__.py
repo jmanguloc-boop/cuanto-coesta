@@ -6,6 +6,7 @@ from pathlib import Path
 from src.transform import tablas
 from src.transform.comun import sin_duplicados, validar
 from src.utils import config
+from src.utils.datos import ruta_tabla
 from src.utils.fechas import rango_semana
 from src.utils.logs import obtener_logger
 
@@ -20,10 +21,6 @@ TABLAS = {
     "embalses": (tablas.tabla_embalses, None, 0, None, ()),
     "centrales": (tablas.tabla_centrales, 48, -5, 1500, ()),
 }
-
-
-def ruta_tabla(tabla, semana, raiz=None):
-    return Path(raiz or config.DIR_PROCESSED) / tabla / f"{tabla}_{semana}.parquet"
 
 
 def transformar_semana(semana, raiz_raw=None, raiz_processed=None):

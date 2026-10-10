@@ -1,154 +1,239 @@
 # Fuente unica de verdad para todo texto explicativo (dashboard y PDF).
-# Claves sin tildes. Los textos (valores) si llevan tildes porque los lee el publico.
-# Campos por termino:
-#   nombre:   como se muestra
-#   corto:    una linea, para tooltips
-#   simple:   explicacion para alguien sin conocimiento tecnico
-#   tecnico:  precision para analistas (opcional)
-#   unidad:   unidad en que se muestra (opcional)
+# Claves sin tildes; los textos si llevan tildes porque los lee el publico.
+# Nunca usar guion largo en estos textos.
+#
+# Campos:
+#   nombre             como se muestra
+#   explicacion_simple maximo 2 lineas, para alguien sin conocimiento tecnico
+#   por_que_importa    1 linea
+#   unidad             unidad en que se muestra
+#   ejemplo_cotidiano  opcional, comparacion con la vida diaria
+
+indicadores:
+  cmg_promedio:
+    nombre: "Costo marginal promedio"
+    explicacion_simple: >
+      Lo que costó producir el último MWh que necesitó el sistema, promediado en la
+      semana. Si sube, la electricidad se volvió más cara de producir.
+    por_que_importa: "Es el precio mayorista de la electricidad: a la larga empuja lo que pagan empresas y hogares."
+    unidad: "S/ por MWh"
+    ejemplo_cotidiano: >
+      Como el precio del pasaje en hora punta: cuando hay mucha gente, el último
+      pasajero lo paga más caro.
+
+  cmg_maximo:
+    nombre: "Precio más alto de la semana"
+    explicacion_simple: >
+      El costo marginal más alto que se registró en una media hora de la semana.
+      Suele aparecer cuando hay que prender centrales caras para cubrir el consumo.
+    por_que_importa: "Muestra qué tan caro se pone producir electricidad en los momentos más ajustados."
+    unidad: "S/ por MWh"
+
+  cmg_minimo:
+    nombre: "Precio más bajo de la semana"
+    explicacion_simple: >
+      El costo marginal más bajo de la semana. Aparece cuando sobra energía barata,
+      por ejemplo de madrugada o con mucho sol y agua.
+    por_que_importa: "Indica cuándo la electricidad fue más barata de producir."
+    unidad: "S/ por MWh"
+
+  horas_precio_bajo:
+    nombre: "Horas con precio bajo"
+    explicacion_simple: >
+      Cuántas horas de la semana el costo marginal estuvo por debajo de S/ 100 por MWh.
+      Son horas en las que la energía fue especialmente barata.
+    por_que_importa: "Más horas baratas significa un sistema con energía sobrante y de bajo costo."
+    unidad: "horas"
+
+  horas_precio_alto:
+    nombre: "Horas con precio alto"
+    explicacion_simple: >
+      Cuántas horas de la semana el costo marginal superó S/ 500 por MWh, una señal
+      de que se encendieron centrales caras.
+    por_que_importa: "Muchas horas caras encarecen la operación del sistema."
+    unidad: "horas"
+
+  perfil_horario:
+    nombre: "Precio según la hora del día"
+    explicacion_simple: >
+      El costo marginal promedio de cada hora, de 0 a 23, juntando los 7 días de la
+      semana. Muestra en qué momentos del día la electricidad sale más cara.
+    por_que_importa: "Ayuda a ver cuándo conviene consumir y cuándo el sistema está más exigido."
+    unidad: "S/ por MWh"
+
+  demanda_maxima:
+    nombre: "Demanda máxima"
+    explicacion_simple: >
+      El momento de la semana en que el país pidió más electricidad a la vez.
+      El sistema tiene que estar listo para cubrir ese pico, aunque dure poco.
+    por_que_importa: "Define cuántas centrales y líneas necesita el país para no quedarse corto."
+    unidad: "MW"
+    ejemplo_cotidiano: >
+      Como la hora de mayor afluencia en un restaurante: hay que tener mesas para
+      ese momento aunque el resto del día sobren.
+
+  energia_semana:
+    nombre: "Energía consumida en la semana"
+    explicacion_simple: >
+      Toda la electricidad que usó el país en los 7 días: hogares, comercios, minas
+      e industrias juntos. 1 GWh equivale a un millón de kWh, la unidad de tu recibo.
+    por_que_importa: "Si crece, suele ser señal de más actividad económica."
+    unidad: "GWh"
+
+  error_programa_diario:
+    nombre: "Diferencia con lo programado"
+    explicacion_simple: >
+      Cuánto se alejó, en promedio, el consumo real de lo que el COES estimó el día
+      anterior. Un número bajo significa que el pronóstico fue bueno.
+    por_que_importa: "Un buen pronóstico permite encender solo las centrales necesarias."
+    unidad: "%"
+
+  mix_generacion:
+    nombre: "Mix de generación"
+    explicacion_simple: >
+      De qué fuentes salió la electricidad de la semana: agua, gas, sol, viento y
+      otras, como porcentaje del total producido.
+    por_que_importa: "El mix define cuánto cuesta la electricidad y cuánto contamina."
+    unidad: "%"
+
+  participacion_renovable:
+    nombre: "Energía renovable (con hidro)"
+    explicacion_simple: >
+      Qué parte de la electricidad vino de fuentes que no se agotan: agua, sol,
+      viento y biomasa.
+    por_que_importa: "Más renovable suele significar menos emisiones y menos dependencia del gas."
+    unidad: "%"
+
+  participacion_renovable_sin_hidro:
+    nombre: "Energía renovable sin hidro"
+    explicacion_simple: >
+      Lo mismo, pero sin contar las hidroeléctricas: solo sol, viento y biomasa,
+      las fuentes nuevas que más están creciendo.
+    por_que_importa: "Mide el avance de las renovables no convencionales en el Perú."
+    unidad: "%"
+
+  precio_capturado_solar:
+    nombre: "Precio capturado por la solar"
+    explicacion_simple: >
+      El precio promedio de las horas en que produjeron las centrales solares,
+      pesado por cuánto produjeron. Se compara con el promedio simple de la semana.
+    por_que_importa: "Si es menor que el promedio, la solar produce justo cuando la energía está barata."
+    unidad: "S/ por MWh"
+    ejemplo_cotidiano: >
+      Como un vendedor de helados que solo vende al mediodía: le importa el precio
+      del mediodía, no el del día entero.
+
+  precio_capturado_eolica:
+    nombre: "Precio capturado por la eólica"
+    explicacion_simple: >
+      El precio promedio de las horas en que produjeron los parques eólicos, pesado
+      por cuánto produjeron.
+    por_que_importa: "Compara si el viento sopla en horas caras o baratas."
+    unidad: "S/ por MWh"
+
+  volumen_embalses:
+    nombre: "Agua en los embalses"
+    explicacion_simple: >
+      El agua almacenada en los principales embalses y reservorios que usan las
+      hidroeléctricas, al cierre de la semana. 1 Hm3 son mil millones de litros.
+    por_que_importa: "Más agua guardada permite producir electricidad barata en los meses secos."
+    unidad: "Hm3"
+    ejemplo_cotidiano: "Como la alcancía del sistema: lo que se guarda en lluvias se gasta en la sequía."
 
 terminos:
   coes:
     nombre: "COES"
-    corto: "Comité de Operación Económica del Sistema Interconectado Nacional."
-    simple: >
-      Es la institución que coordina, minuto a minuto, qué centrales eléctricas
-      del país producen energía para que nunca falte luz y al menor costo posible.
-      Todos los datos de este sitio vienen de su portal público.
+    explicacion_simple: >
+      El Comité de Operación Económica del Sistema: la institución que decide, minuto
+      a minuto, qué centrales producen para que no falte luz y al menor costo.
+    por_que_importa: "Todos los datos de este sitio vienen de su portal público."
 
   sein:
     nombre: "SEIN"
-    corto: "Sistema Eléctrico Interconectado Nacional."
-    simple: >
-      Es la gran red que une centrales, líneas de alta tensión y ciudades de casi
-      todo el Perú. Lo que se produce en una central de Huancavelica puede
-      terminar encendiendo un foco en Lima.
+    explicacion_simple: >
+      El Sistema Eléctrico Interconectado Nacional: la red que une centrales, líneas de
+      alta tensión y ciudades de casi todo el Perú.
+    por_que_importa: "Lo que se produce en una central de los Andes puede encender un foco en Lima."
 
   mw:
     nombre: "MW (megavatio)"
-    corto: "Potencia: cuánta electricidad se usa o produce en un instante."
-    simple: >
-      Mide la fuerza del flujo eléctrico en un momento dado, como la velocidad de
-      un auto. 1 MW alcanza aproximadamente para unas 1 000 casas encendidas al
-      mismo tiempo.
+    explicacion_simple: >
+      Mide potencia: cuánta electricidad se usa o produce en un instante. Es como la
+      velocidad de un auto.
+    por_que_importa: "Sirve para hablar de picos de consumo y del tamaño de las centrales."
     unidad: "MW"
 
   mwh:
-    nombre: "MWh (megavatio-hora)"
-    corto: "Energía: electricidad acumulada a lo largo del tiempo."
-    simple: >
-      Es la cantidad total de electricidad, como los kilómetros recorridos por el
-      auto. Mantener 1 MW durante una hora da 1 MWh. Tu recibo de luz cobra en
-      kWh, que es mil veces más pequeño.
+    nombre: "MWh (megavatio hora)"
+    explicacion_simple: >
+      Mide energía: electricidad acumulada en el tiempo, como los kilómetros recorridos.
+      1 MW durante una hora da 1 MWh, que son 1,000 kWh de tu recibo.
+    por_que_importa: "Es la unidad en que se compra y vende la electricidad mayorista."
     unidad: "MWh"
-
-  demanda:
-    nombre: "Demanda eléctrica"
-    corto: "Cuánta electricidad consume el país en cada momento."
-    simple: >
-      Es la suma de lo que usan hogares, comercios, minas e industrias conectados
-      a la red. Sube de día, baja de madrugada y suele tener su punto más alto al
-      inicio de la noche.
-    tecnico: >
-      Demanda ejecutada del SEIN publicada por el COES en intervalos de 30
-      minutos. Equivale a la generación total despachada en el intervalo.
-    unidad: "MW"
-
-  maxima_demanda:
-    nombre: "Máxima demanda"
-    corto: "El momento de mayor consumo del periodo."
-    simple: >
-      Es el pico de consumo: el instante en que el país pidió más electricidad
-      a la vez. El sistema tiene que estar preparado para cubrir ese momento,
-      aunque dure poco.
-    unidad: "MW"
-
-  programa_diario:
-    nombre: "Programa diario"
-    corto: "Lo que el COES esperaba que se consumiera, calculado el día anterior."
-    simple: >
-      Cada día el COES estima cuánta electricidad se usará mañana para decidir qué
-      centrales encender. Comparar lo programado con lo real muestra qué tan
-      buena fue esa estimación.
-
-  programa_semanal:
-    nombre: "Programa semanal"
-    corto: "La estimación de consumo hecha al inicio de la semana."
-    simple: >
-      Es una estimación hecha con más anticipación que el programa diario, por eso
-      suele alejarse un poco más de lo que finalmente ocurre.
-
-  generacion:
-    nombre: "Generación"
-    corto: "Electricidad producida por las centrales."
-    simple: >
-      Es la electricidad que producen las centrales del país. En todo momento lo
-      generado tiene que igualar a lo consumido, porque la electricidad no se
-      almacena en la red.
-    unidad: "MWh"
-
-  hidroelectrica:
-    nombre: "Hidroeléctrica"
-    corto: "Energía producida con la fuerza del agua de los ríos."
-    simple: >
-      El agua de los ríos mueve turbinas. Es la principal fuente del Perú.
-      Produce más en temporada de lluvias (diciembre a abril) y menos en la
-      época seca.
-
-  termoelectrica:
-    nombre: "Termoeléctrica"
-    corto: "Energía producida quemando combustible, sobre todo gas natural de Camisea."
-    simple: >
-      Se quema un combustible (gas natural, diésel, carbón, residuos de caña) para
-      producir vapor o mover turbinas. Cubre lo que el agua, el sol y el viento no
-      alcanzan, y suele ser más cara y contaminante.
-
-  solar:
-    nombre: "Solar"
-    corto: "Energía producida con paneles que captan la luz del sol."
-    simple: >
-      Paneles solares, sobre todo en el sur del país, que solo producen de día.
-      Es una de las fuentes más baratas y no emite gases al operar.
-
-  eolica:
-    nombre: "Eólica"
-    corto: "Energía producida con la fuerza del viento."
-    simple: >
-      Grandes molinos de viento, principalmente en la costa de Ica, Piura y La
-      Libertad. Su producción depende de cuánto sople el viento.
-
-  rer:
-    nombre: "RER (Recursos Energéticos Renovables)"
-    corto: "Categoría legal para solar, eólica, biomasa y pequeñas hidroeléctricas."
-    simple: >
-      Es una etiqueta de la ley peruana para las fuentes limpias no convencionales:
-      sol, viento, biomasa y centrales hidroeléctricas pequeñas (hasta 20 MW).
-
-  costo_marginal:
-    nombre: "Costo marginal"
-    corto: "Lo que cuesta producir la siguiente unidad de electricidad en un lugar y momento."
-    simple: >
-      Es el precio mayorista de la electricidad en cada momento: lo que cuesta
-      producir un poco más de energía en ese instante. Sube cuando hay que
-      encender centrales caras (por ejemplo, de diésel) y baja cuando sobra agua,
-      sol o viento. No es lo que pagas en tu recibo, pero lo influye a largo plazo.
-    tecnico: >
-      Costo marginal nodal de corto plazo publicado por el COES cada 30 minutos,
-      por barra, con su componente de energía y de congestión.
-    unidad: "S/ por MWh"
 
   barra:
     nombre: "Barra (nodo)"
-    corto: "Un punto de la red eléctrica, normalmente una subestación."
-    simple: >
-      Es un punto de conexión de la red, como un cruce de caminos donde llegan y
-      salen líneas de alta tensión. El precio puede ser distinto en cada barra.
+    explicacion_simple: >
+      Un punto de la red eléctrica, normalmente una subestación, donde se cruzan líneas
+      de alta tensión. Cada barra puede tener un precio distinto.
+    por_que_importa: "Por eso se elige una barra de referencia para seguir el precio."
+
+  barra_referencia:
+    nombre: "Barra de referencia"
+    explicacion_simple: >
+      Usamos la barra Santa Rosa 220 kV, en Lima, que es la referencia clásica del
+      sistema peruano para seguir el precio de la electricidad.
+    por_que_importa: "Mirar siempre la misma barra permite comparar semana a semana."
 
   congestion:
     nombre: "Congestión"
-    corto: "Cuando una línea de transmisión no da abasto."
-    simple: >
-      Pasa cuando una línea eléctrica está llena, como una carretera en hora punta.
-      Entonces la energía barata no puede llegar a cierta zona y allí el precio
-      sube. Esa diferencia se muestra como componente de congestión.
-    unidad: "S/ por MWh"
+    explicacion_simple: >
+      Pasa cuando una línea eléctrica está llena, como una carretera en hora punta,
+      y la energía barata no puede llegar a cierta zona.
+    por_que_importa: "La congestión hace que el precio cambie de una zona a otra."
+
+  hidro:
+    nombre: "Hidroeléctrica"
+    explicacion_simple: >
+      Electricidad producida con la fuerza del agua de los ríos. Produce más en
+      temporada de lluvias (diciembre a abril).
+    por_que_importa: "Es una de las fuentes más baratas del Perú."
+
+  gas:
+    nombre: "Gas natural"
+    explicacion_simple: >
+      Centrales que queman gas natural, sobre todo de Camisea, para mover turbinas.
+      Cubren lo que el agua, el sol y el viento no alcanzan.
+    por_que_importa: "Es la principal fuente térmica del país."
+
+  solar:
+    nombre: "Solar"
+    explicacion_simple: "Paneles que convierten la luz del sol en electricidad. Solo producen de día, sobre todo en el sur."
+    por_que_importa: "Es de las fuentes más baratas y no emite gases al operar."
+
+  eolica:
+    nombre: "Eólica"
+    explicacion_simple: "Molinos que aprovechan el viento, sobre todo en la costa de Ica, Piura y La Libertad."
+    por_que_importa: "Su producción depende de cuánto sople el viento."
+
+  diesel:
+    nombre: "Diésel y residual"
+    explicacion_simple: "Centrales que queman derivados del petróleo. Se usan poco porque son caras."
+    por_que_importa: "Cuando se encienden, el precio suele subir."
+
+  carbon:
+    nombre: "Carbón"
+    explicacion_simple: "Centrales que queman carbón. En el Perú su uso es muy pequeño."
+    por_que_importa: "Es la fuente que más contamina por cada MWh."
+
+  biomasa:
+    nombre: "Biomasa"
+    explicacion_simple: "Electricidad hecha con residuos de caña de azúcar (bagazo) o biogás de rellenos."
+    por_que_importa: "Aprovecha desechos que de otra forma se perderían."
+
+  preliminar:
+    nombre: "Dato preliminar"
+    explicacion_simple: >
+      Un dato que el COES todavía puede corregir porque aún no publicó su evaluación
+      final del día.
+    por_que_importa: "Los números pueden cambiar un poco cuando el COES los confirme."

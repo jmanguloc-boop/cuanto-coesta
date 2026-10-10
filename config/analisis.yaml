@@ -1,0 +1,17 @@
+# Parametros de los indicadores semanales. Documentados en PROGRESO.md (Decisiones).
+
+barra_referencia: "SANTA ROSA 220"   # Lima; se repite aqui para no depender de fuentes.yaml
+
+umbrales_precio:                     # S/ por MWh, sobre la barra de referencia
+  bajo: 100      # ~27 USD/MWh: precio de sistema con mucha agua, sol y viento
+  alto: 500      # ~135 USD/MWh: senal de que entran centrales caras (diesel, gas en ciclo simple)
+
+# Cuanto tiene que cambiar un indicador vs la semana anterior para ser "noticia"
+relevancia:
+  cmg_promedio: 0.10            # 10 %
+  demanda_maxima: 0.03
+  energia_semana: 0.03
+  participacion_renovable: 0.03 # 3 puntos porcentuales
+  volumen_embalses: 0.05
+
+semanas_minimas_para_record: 4  # no se habla de "record" con menos historia que esto
