@@ -1,0 +1,154 @@
+# Fuente unica de verdad para todo texto explicativo (dashboard y PDF).
+# Claves sin tildes. Los textos (valores) si llevan tildes porque los lee el publico.
+# Campos por termino:
+#   nombre:   como se muestra
+#   corto:    una linea, para tooltips
+#   simple:   explicacion para alguien sin conocimiento tecnico
+#   tecnico:  precision para analistas (opcional)
+#   unidad:   unidad en que se muestra (opcional)
+
+terminos:
+  coes:
+    nombre: "COES"
+    corto: "Comité de Operación Económica del Sistema Interconectado Nacional."
+    simple: >
+      Es la institución que coordina, minuto a minuto, qué centrales eléctricas
+      del país producen energía para que nunca falte luz y al menor costo posible.
+      Todos los datos de este sitio vienen de su portal público.
+
+  sein:
+    nombre: "SEIN"
+    corto: "Sistema Eléctrico Interconectado Nacional."
+    simple: >
+      Es la gran red que une centrales, líneas de alta tensión y ciudades de casi
+      todo el Perú. Lo que se produce en una central de Huancavelica puede
+      terminar encendiendo un foco en Lima.
+
+  mw:
+    nombre: "MW (megavatio)"
+    corto: "Potencia: cuánta electricidad se usa o produce en un instante."
+    simple: >
+      Mide la fuerza del flujo eléctrico en un momento dado, como la velocidad de
+      un auto. 1 MW alcanza aproximadamente para unas 1 000 casas encendidas al
+      mismo tiempo.
+    unidad: "MW"
+
+  mwh:
+    nombre: "MWh (megavatio-hora)"
+    corto: "Energía: electricidad acumulada a lo largo del tiempo."
+    simple: >
+      Es la cantidad total de electricidad, como los kilómetros recorridos por el
+      auto. Mantener 1 MW durante una hora da 1 MWh. Tu recibo de luz cobra en
+      kWh, que es mil veces más pequeño.
+    unidad: "MWh"
+
+  demanda:
+    nombre: "Demanda eléctrica"
+    corto: "Cuánta electricidad consume el país en cada momento."
+    simple: >
+      Es la suma de lo que usan hogares, comercios, minas e industrias conectados
+      a la red. Sube de día, baja de madrugada y suele tener su punto más alto al
+      inicio de la noche.
+    tecnico: >
+      Demanda ejecutada del SEIN publicada por el COES en intervalos de 30
+      minutos. Equivale a la generación total despachada en el intervalo.
+    unidad: "MW"
+
+  maxima_demanda:
+    nombre: "Máxima demanda"
+    corto: "El momento de mayor consumo del periodo."
+    simple: >
+      Es el pico de consumo: el instante en que el país pidió más electricidad
+      a la vez. El sistema tiene que estar preparado para cubrir ese momento,
+      aunque dure poco.
+    unidad: "MW"
+
+  programa_diario:
+    nombre: "Programa diario"
+    corto: "Lo que el COES esperaba que se consumiera, calculado el día anterior."
+    simple: >
+      Cada día el COES estima cuánta electricidad se usará mañana para decidir qué
+      centrales encender. Comparar lo programado con lo real muestra qué tan
+      buena fue esa estimación.
+
+  programa_semanal:
+    nombre: "Programa semanal"
+    corto: "La estimación de consumo hecha al inicio de la semana."
+    simple: >
+      Es una estimación hecha con más anticipación que el programa diario, por eso
+      suele alejarse un poco más de lo que finalmente ocurre.
+
+  generacion:
+    nombre: "Generación"
+    corto: "Electricidad producida por las centrales."
+    simple: >
+      Es la electricidad que producen las centrales del país. En todo momento lo
+      generado tiene que igualar a lo consumido, porque la electricidad no se
+      almacena en la red.
+    unidad: "MWh"
+
+  hidroelectrica:
+    nombre: "Hidroeléctrica"
+    corto: "Energía producida con la fuerza del agua de los ríos."
+    simple: >
+      El agua de los ríos mueve turbinas. Es la principal fuente del Perú.
+      Produce más en temporada de lluvias (diciembre a abril) y menos en la
+      época seca.
+
+  termoelectrica:
+    nombre: "Termoeléctrica"
+    corto: "Energía producida quemando combustible, sobre todo gas natural de Camisea."
+    simple: >
+      Se quema un combustible (gas natural, diésel, carbón, residuos de caña) para
+      producir vapor o mover turbinas. Cubre lo que el agua, el sol y el viento no
+      alcanzan, y suele ser más cara y contaminante.
+
+  solar:
+    nombre: "Solar"
+    corto: "Energía producida con paneles que captan la luz del sol."
+    simple: >
+      Paneles solares, sobre todo en el sur del país, que solo producen de día.
+      Es una de las fuentes más baratas y no emite gases al operar.
+
+  eolica:
+    nombre: "Eólica"
+    corto: "Energía producida con la fuerza del viento."
+    simple: >
+      Grandes molinos de viento, principalmente en la costa de Ica, Piura y La
+      Libertad. Su producción depende de cuánto sople el viento.
+
+  rer:
+    nombre: "RER (Recursos Energéticos Renovables)"
+    corto: "Categoría legal para solar, eólica, biomasa y pequeñas hidroeléctricas."
+    simple: >
+      Es una etiqueta de la ley peruana para las fuentes limpias no convencionales:
+      sol, viento, biomasa y centrales hidroeléctricas pequeñas (hasta 20 MW).
+
+  costo_marginal:
+    nombre: "Costo marginal"
+    corto: "Lo que cuesta producir la siguiente unidad de electricidad en un lugar y momento."
+    simple: >
+      Es el precio mayorista de la electricidad en cada momento: lo que cuesta
+      producir un poco más de energía en ese instante. Sube cuando hay que
+      encender centrales caras (por ejemplo, de diésel) y baja cuando sobra agua,
+      sol o viento. No es lo que pagas en tu recibo, pero lo influye a largo plazo.
+    tecnico: >
+      Costo marginal nodal de corto plazo publicado por el COES cada 30 minutos,
+      por barra, con su componente de energía y de congestión.
+    unidad: "S/ por MWh"
+
+  barra:
+    nombre: "Barra (nodo)"
+    corto: "Un punto de la red eléctrica, normalmente una subestación."
+    simple: >
+      Es un punto de conexión de la red, como un cruce de caminos donde llegan y
+      salen líneas de alta tensión. El precio puede ser distinto en cada barra.
+
+  congestion:
+    nombre: "Congestión"
+    corto: "Cuando una línea de transmisión no da abasto."
+    simple: >
+      Pasa cuando una línea eléctrica está llena, como una carretera en hora punta.
+      Entonces la energía barata no puede llegar a cierta zona y allí el precio
+      sube. Esa diferencia se muestra como componente de congestión.
+    unidad: "S/ por MWh"
