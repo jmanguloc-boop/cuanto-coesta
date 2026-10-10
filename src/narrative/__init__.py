@@ -184,7 +184,13 @@ def parrafo_demanda(r):
     ene, pico, err = r.ind("energia_semana"), r.ind("demanda_maxima"), r.ind("error_programa_diario")
     if ene is None or ene.valor is None:
         return "Esta semana no hay datos de demanda disponibles."
-    texto = elegir(P.APERTURA_DEMANDA, r.semana, "demanda").format(energia=f"{numero(ene.valor)} GWh")
+    periodo = "en la semana" if r.dias_con_datos >= 7 else f"en los {r.dias_con_datos} días con datos completos"
+    if r.dias_con_datos >= 7:
+        periodo_inicio = "En siete días"
+    else:
+        periodo_inicio = f"En los {r.dias_con_datos} días con datos completos"
+    texto = elegir(P.APERTURA_DEMANDA, r.semana, "demanda").format(
+        energia=f"{numero(ene.valor)} GWh", periodo=periodo, Periodo=periodo_inicio)
     comp = _comparaciones(ene, r.desde.year - 1)
     texto += f", {comp}." if comp else "."
     texto += f" El momento de mayor consumo fue el {dia_y_hora(pico.momento)}, con {numero(pico.valor)} MW"

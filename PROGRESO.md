@@ -10,7 +10,7 @@
 - [x] Bloque 6: Narrativa automatica
 - [x] Bloque 7: Dashboard Streamlit
 - [x] Bloque 8: PDF semanal
-- [ ] Bloque 9: Pipeline semanal y automatizacion
+- [x] Bloque 9: Pipeline semanal y automatizacion
 - [ ] Bloque 10: Calidad y documentacion
 - [ ] Bloque 11: Entrega final comprimida
 
@@ -127,6 +127,27 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   alto de cajitas, dia extra en eje, leyenda encima de la linea.
 - 46 tests en verde (secciones, max 6 paginas, sin guion largo).
 
+### Bloque 9: Pipeline semanal y automatizacion (2026-10-10)
+- run_weekly.py: extract + transform de la semana, la(s) anterior(es) y la del anio
+  pasado; luego analysis, narrative y report. Opciones --semana, --historico N,
+  --sin-descarga. Solo devuelve 1 si no se pudo generar el PDF.
+- Probado con 8 semanas de historico (W32 a W40 + 2025-W40): 7 min 52 s, sin
+  intervencion. Primer record real detectado: embalses en su punto mas bajo en 9 semanas
+  (bajaron todas las semanas de 716 a 529 Hm3).
+- Probado con la semana en curso (W41, 5 dias completos): sale marcada PRELIMINAR,
+  sin fallar.
+- Corregido al probar:
+  - Algunos zips del IEOD traen el Excel sin carpeta: ahora se busca por nombre.
+  - Un dia con formato raro ya no tumba la semana entera de esa fuente.
+  - Semana incompleta: los totales (energia, horas) no se comparan y el texto dice
+    "en los N dias con datos completos".
+  - Dias anomalos solo con dias de al menos 3/4 de sus intervalos.
+  - "Records" solo sobre semanas consecutivas (un hueco corta la racha).
+- .github/workflows/semanal.yml: lunes 12:00 UTC, cache de data/raw entre corridas,
+  tests, commit de data/processed y Release `semana-AAAA-Www` con el PDF.
+- README con despliegue en Streamlit Community Cloud (no desplegado: requiere cuentas).
+- 47 tests en verde.
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -176,9 +197,16 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - **fpdf2 + matplotlib** (no reportlab): mas liviano y suficiente. pypdfium2 se agrega
   solo para exportar la portada a PNG y para leer el PDF en los tests.
 
+- **Datos para el dashboard en la nube**: el workflow commitea `data/processed`
+  (~1 MB por semana, la mayor parte el costo marginal de 235 barras). Es simple y
+  Streamlit Cloud lo lee directo del repo. Si crece demasiado, recortar costo_marginal
+  a la barra de referencia.
+
 ## Pendientes
 
 - Eventos, mantenimientos e indisponibilidades (ya vienen en el Anexo A) para una version futura.
 - CMg revisados (mensuales, definitivos) no se usan: llegan con ~1 mes de retraso.
 - Huecos propios del COES en CMg (ej. 02/10/2026: 39 de 48 intervalos). Los promedios usan los intervalos disponibles.
 - Reportar al COES el cruce de etiquetas SOLAR/BAGAZO de su portal (opcional, accion del usuario).
+- Records de embalses comparan totales aunque cambie levemente el numero de embalses
+  que reportan (24 vs 25). Mejorar comparando solo el conjunto comun.

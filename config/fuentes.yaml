@@ -43,7 +43,8 @@ fuentes:
     formato: xlsx
     # Dentro del zip diario solo se conserva este Excel (275 KB de 5.4 MB)
     ruta_ieod: "Post Operación/Reportes/IEOD/{anio}/{mes_carpeta}/{dia}/CMg{aaaammdd}.zip"
-    miembro_zip: "CMg{aaaammdd}/CMgCP{ddmm}.xlsx"
+    # Se busca por nombre: a veces viene dentro de una carpeta CMgAAAAMMDD/ y a veces no
+    miembro_zip: "CMgCP{ddmm}.xlsx"
     max_dias_por_pedido: 1
 
   costo_marginal_tr:

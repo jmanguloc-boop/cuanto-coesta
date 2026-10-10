@@ -15,6 +15,10 @@ from src.utils.logs import obtener_logger
 
 log = obtener_logger(__name__)
 
+# Totales de la semana: con dias faltantes no se pueden comparar contra semanas completas
+ACUMULADOS = {"energia_semana", "horas_precio_bajo", "horas_precio_alto"}
+INTERVALOS_DIA_COMPLETO = 46
+
 
 def _datos_semana(semana, raiz=None):
     """Lee las tablas de una semana y arma las series base."""
@@ -52,10 +56,24 @@ def metricas_semana(semana, raiz=None) -> dict:
     }
 
 
-def _historico(semana, raiz=None):
-    previas = [s for s in semanas_disponibles("demanda", raiz) if s < semana and s != misma_semana_anio_anterior(semana)]
+def dias_completos(serie_dem) -> int:
+    if serie_dem.empty:
+        return 0
+    conteo = serie_dem.groupby("fecha")["ejecutada"].count()
+    return int((conteo >= INTERVALOS_DIA_COMPLETO).sum())
+
+
+def _historico(semana, raiz=None, maximo=12):
+    """Metricas de las semanas inmediatamente anteriores y consecutivas (para hablar de 'las ultimas N semanas')."""
+    disponibles = set(semanas_disponibles("demanda", raiz))
+    previas = []
+    for i in range(1, maximo + 1):
+        s = semana_anterior(semana, i)
+        if s not in disponibles:
+            break   # un hueco corta la racha: no se afirma un record sobre semanas salteadas
+        previas.insert(0, s)
     filas = []
-    for s in previas[-12:]:
+    for s in previas:
         m = metricas_semana(s, raiz)
         filas.append({k: v for k, v in m.items() if not k.startswith("_")})
     return pd.DataFrame(filas)
@@ -73,9 +91,11 @@ def calcular_resumen(semana, raiz=None) -> ResumenSemanal:
     ant = metricas_semana(sem_ant, raiz)
     anio = metricas_semana(sem_anio, raiz)
     p, d = ind.precios(cmg, umbrales), ind.demanda(dem)
+    dias = dias_completos(dem)
 
     def nuevo(clave, unidad, momento=None, es_puntos=False):
-        return Indicador(clave, actual.get(clave), unidad, ant.get(clave), anio.get(clave), momento, es_puntos)
+        return Indicador(clave, actual.get(clave), unidad, ant.get(clave), anio.get(clave), momento, es_puntos,
+                         comparable=not (clave in ACUMULADOS and dias < 7))
 
     indicadores = {
         "cmg_promedio": nuevo("cmg_promedio", "S/ por MWh"),
@@ -106,7 +126,6 @@ def calcular_resumen(semana, raiz=None) -> ResumenSemanal:
 
     historico = _historico(semana, raiz)
     tablas_prelim = [leer_tabla(t, semana, raiz) for t in ("demanda", "generacion", "costo_marginal")]
-    dias = dem["fecha"].nunique() if not dem.empty else 0
     es_prelim = dias < 7 or any(not t.empty and t["es_preliminar"].any() for t in tablas_prelim)
     ruta_avisos = Path(raiz or config.DIR_PROCESSED) / "avisos" / f"avisos_{semana}.json"
     avisos = json.loads(ruta_avisos.read_text(encoding="utf-8")) if ruta_avisos.exists() else []

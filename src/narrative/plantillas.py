@@ -24,11 +24,11 @@ TITULARES = {
     ],
     ("variacion", "energia_semana", "sube"): [
         "El Perú consumió {var} más electricidad que la semana pasada",
-        "Más consumo: {valor} en siete días",
+        "Más consumo: {valor} en la semana",
     ],
     ("variacion", "energia_semana", "baja"): [
         "El consumo de electricidad bajó {var} en la semana",
-        "Menos consumo: {valor} en siete días",
+        "Menos consumo: {valor} en la semana",
     ],
     ("variacion", "participacion_renovable", "sube"): [
         "Las renovables ganaron terreno: {valor} de la electricidad",
@@ -87,8 +87,8 @@ APERTURA_PRECIOS = [
 ]
 
 APERTURA_DEMANDA = [
-    "El país consumió {energia} de electricidad en la semana",
-    "En siete días, hogares, comercios, minas e industrias usaron {energia}",
+    "El país consumió {energia} de electricidad {periodo}",
+    "{Periodo}, hogares, comercios, minas e industrias usaron {energia}",
 ]
 
 APERTURA_GENERACION = [

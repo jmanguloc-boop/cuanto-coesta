@@ -71,10 +71,14 @@ def descargar_por_tramos(nombre_fuente, desde, hasta, obtener, cliente=None, rai
             continue
         try:
             contenido = obtener(cliente, fuente, inicio, fin)
+            validar_contenido(contenido, fuente["formato"])
         except NoPublicado:
             log.info("%s: %s aun no publicado", nombre_fuente, inicio)
             continue
-        validar_contenido(contenido, fuente["formato"])
+        except (ValueError, KeyError) as error:
+            # Archivo con formato inesperado: se salta ese tramo y se sigue con los demas
+            log.error("%s: %s a %s con formato inesperado (%s)", nombre_fuente, inicio, fin, error)
+            continue
         ruta.parent.mkdir(parents=True, exist_ok=True)
         ruta.write_bytes(contenido)
         log.info("nuevo %s (%.0f KB)", ruta.name, len(contenido) / 1024)

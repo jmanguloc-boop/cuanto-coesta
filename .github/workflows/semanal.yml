@@ -1,0 +1,81 @@
+name: Reporte semanal
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"   # lunes 12:00 UTC = 7:00 a. m. en Lima
+  workflow_dispatch:
+    inputs:
+      semana:
+        description: "Semana ISO a generar (ej. 2026-W40). Vacio = ultima semana completa"
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # para commitear data/processed y crear el Release
+
+concurrency:
+  group: reporte-semanal
+  cancel-in-progress: false
+
+jobs:
+  semanal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      # Las descargas crudas se guardan entre corridas para no volver a pedirle al COES lo mismo
+      - name: Cache de data/raw
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: raw-${{ github.run_id }}
+          restore-keys: raw-
+
+      - name: Correr el pipeline
+        run: |
+          if [ -n "${{ inputs.semana }}" ]; then
+            python run_weekly.py --semana "${{ inputs.semana }}"
+          else
+            python run_weekly.py
+          fi
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: Identificar el PDF generado
+        id: pdf
+        run: |
+          RUTA=$(ls -t reports/*.pdf | head -1)
+          SEMANA=$(basename "$RUTA" .pdf | sed 's/.*_//')
+          echo "ruta=$RUTA" >> "$GITHUB_OUTPUT"
+          echo "semana=$SEMANA" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar datos procesados para el dashboard
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f data/processed
+          git commit -m "Datos de la semana ${{ steps.pdf.outputs.semana }}" || echo "Sin cambios en los datos"
+          git push
+
+      - name: Publicar el PDF como Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="semana-${{ steps.pdf.outputs.semana }}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "${{ steps.pdf.outputs.ruta }}" --clobber
+          else
+            gh release create "$TAG" "${{ steps.pdf.outputs.ruta }}" \
+              --title "Reporte ${{ steps.pdf.outputs.semana }}" \
+              --notes "Reporte semanal generado automaticamente con datos publicos del COES. Proyecto independiente, no afiliado al COES."
+          fi

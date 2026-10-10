@@ -21,8 +21,12 @@ class Indicador:
     es_puntos: bool = False                # variaciones en puntos porcentuales (para shares)
     var_anterior: float | None = None
     var_anio: float | None = None
+    comparable: bool = True                # False: total de una semana incompleta, no se compara
 
     def __post_init__(self):
+        if not self.comparable:
+            self.var_anterior = self.var_anio = None
+            return
         if self.var_anterior is None:
             self.var_anterior = self._var(self.anterior)
         if self.var_anio is None:
@@ -53,7 +57,7 @@ class ResumenSemanal:
     semana_anterior: str
     semana_anio_anterior: str
     es_preliminar: bool
-    dias_con_datos: int
+    dias_con_datos: int                        # dias completos (>= 46 de 48 intervalos de demanda)
     barra_referencia: str
     umbrales_precio: dict
     indicadores: dict[str, Indicador]

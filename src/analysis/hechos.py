@@ -33,7 +33,7 @@ def hechos_por_record(indicadores, historico: pd.DataFrame):
     hechos = []
     for clave in CLAVES_HISTORICO:
         ind = indicadores.get(clave)
-        if ind is None or ind.valor is None or clave not in historico:
+        if ind is None or ind.valor is None or not ind.comparable or clave not in historico:
             continue
         previos = historico[clave].dropna()
         if len(previos) < minimo:
@@ -47,9 +47,13 @@ def hechos_por_record(indicadores, historico: pd.DataFrame):
 
 def hechos_por_anomalia(serie_cmg: pd.DataFrame):
     """Un dia con precio promedio muy distinto al del resto de la semana."""
-    if serie_cmg.empty or serie_cmg["fecha"].nunique() < 4:
+    if serie_cmg.empty:
         return []
-    diario = serie_cmg.groupby("fecha")["valor"].mean()
+    conteo = serie_cmg.groupby("fecha")["valor"].count()
+    completos = conteo[conteo >= 36].index   # dias con al menos 3/4 de sus intervalos
+    if len(completos) < 4:
+        return []
+    diario = serie_cmg[serie_cmg["fecha"].isin(completos)].groupby("fecha")["valor"].mean()
     hechos = []
     for fecha, valor in diario.items():
         resto = diario.drop(fecha).mean()

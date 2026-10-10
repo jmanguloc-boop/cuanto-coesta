@@ -51,10 +51,10 @@ def cliente_falso(respuestas):
     return ClienteCoes(sesion=SesionFalsa(respuestas), dormir=lambda s: None, ahora=AHORA)
 
 
-def zip_cmg_falso():
+def zip_cmg_falso(carpeta="CMg20261001/"):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
-        z.writestr("CMg20261001/CMgCP0110.xlsx", (DIR_SAMPLES / "costo_marginal_20261001.xlsx").read_bytes())
+        z.writestr(f"{carpeta}CMgCP0110.xlsx", (DIR_SAMPLES / "costo_marginal_20261001.xlsx").read_bytes())
         z.writestr("CMg20261001/PSSE_20261001.zip", b"no se usa")
     return buffer.getvalue()
 
@@ -96,6 +96,13 @@ def test_costo_marginal_extrae_excel_del_zip(tmp_path):
     archivos = costo_marginal.descargar(date(2026, 10, 1), date(2026, 10, 1), cliente=cliente, raiz=tmp_path)
     assert len(archivos) == 1
     assert archivos[0].read_bytes() == (DIR_SAMPLES / "costo_marginal_20261001.xlsx").read_bytes()
+
+
+def test_costo_marginal_zip_sin_carpeta(tmp_path):
+    # Algunos dias el COES publica el zip sin la carpeta CMgAAAAMMDD/
+    cliente = cliente_falso([("CMg20261001.zip", zip_cmg_falso(carpeta=""))])
+    archivos = costo_marginal.descargar(date(2026, 10, 1), date(2026, 10, 1), cliente=cliente, raiz=tmp_path)
+    assert [a.parent.name for a in archivos] == ["costo_marginal"]
 
 
 def test_costo_marginal_usa_respaldo_si_ieod_no_publico(tmp_path):

@@ -15,9 +15,12 @@ NOMBRE = "costo_marginal"
 
 def _obtener(cliente, fuente, inicio, fin):
     contenido = cliente.pedir_archivo_visor(ruta_ieod(fuente["ruta_ieod"], inicio))
-    miembro = ruta_ieod(fuente["miembro_zip"], inicio)
+    buscado = ruta_ieod(fuente["miembro_zip"], inicio).lower()
     with zipfile.ZipFile(io.BytesIO(contenido)) as z:
-        return z.read(miembro)
+        for nombre in z.namelist():
+            if nombre.replace("\\", "/").split("/")[-1].lower() == buscado:
+                return z.read(nombre)
+    raise ValueError(f"El zip del IEOD no trae {buscado}")
 
 
 def descargar(desde, hasta, cliente=None, raiz=None, forzar=False):
