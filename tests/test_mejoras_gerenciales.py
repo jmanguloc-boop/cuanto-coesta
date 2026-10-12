@@ -123,3 +123,21 @@ def test_centrales_y_empresas(processed_muestra):
     d = C.detalle_central(cen, top["central"].iloc[0], cmg)
     assert d["precio_capturado"] == pytest.approx(100.0)                       # precio plano: capturado = precio
     assert d["ingreso_estimado"] == pytest.approx(d["energia_mwh"] * 100.0, rel=1e-6)
+
+
+def test_programa_diario_cmg_programado():
+    from src.extract import programa as PR
+    from src.utils.config import DIR_SAMPLES
+    df = PR.leer(DIR_SAMPLES / "programa_20261012.xlsx", date(2026, 10, 12))
+    sr = df[df["barra"] == "SANTA ROSA 220"]
+    assert len(sr) == 48 and set(df["barra"]) >= {"SANTA ROSA 220", "TRUJILLO 220", "SOCABAYA 220"}
+    assert sr["fecha_hora"].max() == pd.Timestamp("2026-10-13 00:00")     # 23:59 = fin del dia
+    assert 10 < sr["cmg_usd"].mean() < 500                                    # viene en US$/MWh
+    tabla = pd.DataFrame({"fecha": [date(2026, 10, 12)], "tc": [3.5]})
+    assert PR.en_soles(sr, tabla)["cmg_soles"].iloc[0] == pytest.approx(sr["cmg_usd"].iloc[0] * 3.5)
+
+
+def test_ruta_del_programa_en_el_visor():
+    from src.extract import programa as PR
+    ruta = PR.ruta_visor(date(2026, 9, 5))
+    assert ruta.endswith("2026/09_SETIEMBRE/Día 05/Anexo1_Despacho_20260905.xlsx")

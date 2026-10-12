@@ -21,7 +21,7 @@ sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import tk_ui as ui  # noqa: E402
-from src.ahora.memoria import estado_precio  # noqa: E402
+from src.ahora.memoria import estado_precio, programa_ahora  # noqa: E402
 from src.analysis import calcular_resumen  # noqa: E402
 from src.narrative import generar_narrativa  # noqa: E402
 from src.utils import config, estado  # noqa: E402
@@ -121,6 +121,7 @@ class App:
         self.ocupado = False
         self.pendientes = []
         self.r = self.n = self.e = None
+        self.prog = {}
         self.auto = tk.BooleanVar(value=True)
         # Estado de la seccion Evolucion
         self.ev_datos = None
@@ -249,12 +250,13 @@ class App:
 
     def cargar_ahora(self):
         """Al abrir: muestra lo guardado y, si tiene mas de 40 min (o hay huecos), consulta al COES."""
-        def listo(e):
-            self._mostrar_ahora(e)
+        def listo(resultado):
+            self._mostrar_ahora(resultado)
+            e = resultado[0]
             if e.sin_datos or (e.antiguedad_min or 0) > 40:
                 self.actualizar_ahora()
 
-        self._en_fondo("Leyendo el último precio", estado_precio, listo)
+        self._en_fondo("Leyendo el último precio", lambda: (estado_precio(), programa_ahora()), listo)
 
     def actualizar_ahora(self):
         from src.ahora.extractor import actualizar
@@ -262,11 +264,12 @@ class App:
         def tarea():
             hay_base = (config.DIR_DATA / "ahora" / "ahora.sqlite").exists()
             actualizar(desde_ayer=not hay_base)
-            return estado_precio()
+            return estado_precio(), programa_ahora()
 
         self._en_fondo("Consultando al COES", tarea, self._mostrar_ahora)
 
-    def _mostrar_ahora(self, e):
+    def _mostrar_ahora(self, resultado):
+        e, self.prog = resultado
         self.e = e
         self.vista_ahora()
         self._frescura()
@@ -502,11 +505,37 @@ class App:
                 tono_ref = "neutro" if abs(ref.var) < 0.05 else ("malo" if ref.var > 0 else "bueno")
                 ui.etiqueta_cambio(t, f"{'▲' if ref.var > 0 else '▼'} {abs(ref.var) * 100:.0f}%", tono_ref).pack(side="right")
 
+        prog = self.prog or {}
+        hoy_prog, manana = prog.get("hoy"), prog.get("manana")
         fila = self._fila(c, [5, 3], uniforme=False)
-        self._tarjeta_grafico(fila, "Hoy frente a ayer", G.ahora(e.serie_hoy, e.serie_ayer), alto=260).grid(
+        self._tarjeta_grafico(fila, "Hoy frente a ayer y a lo programado",
+                              G.ahora(e.serie_hoy, e.serie_ayer, programado=hoy_prog), alto=260).grid(
             row=0, column=0, sticky="nsew", padx=(0, 14))
         lado = tk.Frame(fila, bg=P["papel"])
         lado.grid(row=0, column=1, sticky="nsew")
+        # Lo programado por el COES: cuanto se aleja el dato real y que se espera manana
+        if hoy_prog is not None and len(hoy_prog):
+            mismo = hoy_prog[hoy_prog["fecha_hora"] == e.momento]
+            if len(mismo):
+                plan = float(mismo["cmg_soles"].iloc[0])
+                dif = e.valor / plan - 1 if plan else 0
+                tono_p = "alerta" if dif > 0.3 else ("info" if dif < -0.3 else "neutro")
+                ui.tarjeta_cifra(lado, "Programado para esta hora", soles(plan), "por MWh",
+                                 f"El real va {abs(dif) * 100:.0f}% {'arriba' if dif > 0 else 'abajo'}", tono_p,
+                                 "Costo marginal que el COES calculó el día anterior en su Programa Diario de "
+                                 "Operación (modelo YUPANA, en dólares, convertido a soles con el tipo de cambio BCRP)."
+                                 ).pack(fill="x", pady=(0, 14))
+        if manana is not None and len(manana):
+            imax = manana["cmg_soles"].idxmax()
+            pico = manana.loc[imax, "fecha_hora"]
+            ui.tarjeta_cifra(lado, "Mañana se espera", soles(manana["cmg_soles"].mean()), "por MWh en promedio",
+                             f"pico de {soles(manana.loc[imax, 'cmg_soles'])} a las {hora_corta(pico)}", "info",
+                             "Programa Diario de Operación del COES para mañana. Es una previsión: el precio real "
+                             "puede ser muy distinto si cambian el agua, la demanda o salen centrales.").pack(
+                fill="x", pady=(0, 14))
+        else:
+            ui.texto(lado, "El programa de mañana lo publica el COES por la tarde.", 9, P["gris"]).pack(
+                anchor="w", pady=(0, 10))
         if e.demanda:
             d = e.demanda
             desvio = d["desvio"]

@@ -129,10 +129,13 @@ def perfil_horario(perfil, titulo="", kicker="Promedio por hora · S/ por MWh"):
     return fig
 
 
-def ahora(serie_hoy, serie_ayer, titulo="", umbrales=None, kicker="Tiempo real · preliminar"):
-    """La curva de hoy (azul) frente a la de ayer (gris claro), en el mismo reloj."""
+def ahora(serie_hoy, serie_ayer, titulo="", umbrales=None, kicker="Tiempo real · preliminar", programado=None):
+    """La curva de hoy (azul) frente a la de ayer (gris claro) y a lo programado por el COES (naranja punteado)."""
     p = paleta()
     fig, ax = _fig()
+    if programado is not None and len(programado):
+        ax.plot(programado["fecha_hora"], programado["cmg_soles"], color=p["naranja"], linewidth=1.6,
+                linestyle=(0, (4, 3)), label="Programado")
     if len(serie_ayer):
         corrida = serie_ayer["fecha_hora"] + pd.Timedelta(days=1)
         ax.plot(corrida, serie_ayer["valor"], color=AYER, linewidth=2, label="Ayer")

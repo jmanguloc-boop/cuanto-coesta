@@ -111,3 +111,18 @@ def estado_demanda(demanda: pd.DataFrame) -> dict:
         "ayer": float(ayer.iloc[0]) if len(ayer) else None,
         "serie": demanda,
     }
+
+
+def programa_ahora(hoy=None, cliente=None):
+    """Costo marginal programado por el COES para hoy y manana, en soles (vacios si no hay)."""
+    from src.extract import bcrp
+    from src.extract import programa as pr
+    hoy = hoy or ahora_peru().date()
+    salida = {}
+    tabla_tc = bcrp.actualizar(hoy - timedelta(days=10), hoy)
+    for clave, dia in (("hoy", hoy), ("manana", hoy + timedelta(days=1))):
+        try:
+            salida[clave] = pr.en_soles(pr.programa(dia, cliente=cliente), tabla_tc)
+        except Exception:   # sin programa la pestana Ahora sigue funcionando
+            salida[clave] = pd.DataFrame(columns=["fecha_hora", "cmg_usd", "cmg_soles"])
+    return salida
