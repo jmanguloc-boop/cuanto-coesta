@@ -1,0 +1,20 @@
+Hoy a las 9 de la mañana, producir electricidad en Lima costaba S/ 894.7 por MWh.
+Ayer, a la misma hora, S/ 138.6. Y el propio COES había programado S/ 168.
+
+Saltos así son el día a día del mercado eléctrico peruano, pero entenderlos obliga a navegar entre decenas de archivos y portales. Por eso construí Cuánto COESta, un proyecto propio en Python que descarga cada 30 minutos los datos públicos del COES y los convierte en una app de escritorio clara y rápida: el precio en vivo frente a ayer, a la semana pasada y a lo programado; la evolución día por día con mapa de calor y bloques de punta y fuera de punta, en soles o en dólares; las salidas de centrales y los mantenimientos; la generación y el ingreso spot estimado por central; y todo exportable a Excel con un clic. En el camino encontré cosas que no esperaba, como dos series del portal con las etiquetas cruzadas (solar y bagazo) o que el precio preliminar cambia en promedio 13.5% cuando el COES lo confirma. Datos 100% públicos y cada cifra explicada en simple.
+
+¿Qué indicador del sector te gustaría seguir en una herramienta así? Te leo en los comentarios.
+
+#SectorEléctrico #EnergíaPerú #MercadoEléctrico #Python #DataAnalytics #COES
+
+(Proyecto independiente, no afiliado al COES.)
+
+
+------------------------------------------------------------
+IMÁGENES (subirlas en este orden, como carrusel):
+1_ahora.png                 Precio en vivo: S/ 894.7, 5 veces lo normal para esa hora
+2_ahora_vs_programado.png   Hoy vs ayer vs lo programado por el COES
+3_evolucion.png             Evolución: promedio, punta, fuera de punta, máximo y mínimo
+4_mapa_de_calor.png         Mapa de calor: cada día, cada media hora
+5_resumen.png               Resumen de la semana
+6_centrales.png             Generación e ingreso spot estimado por central
