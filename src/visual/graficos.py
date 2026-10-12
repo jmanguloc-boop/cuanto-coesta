@@ -66,7 +66,10 @@ def _encabezado(fig, ax, titulo, kicker=""):
 
 
 def _leyenda(ax, **extra):
-    """Leyenda arriba a la derecha, fuera del area de datos."""
+    """Leyenda arriba a la derecha, fuera del area de datos (deja espacio arriba si no hay titulo)."""
+    fig = ax.figure
+    if not getattr(fig, "titulo", ""):
+        fig.subplots_adjust(top=0.86)
     return ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.01), ncols=3, fontsize=8,
                      prop=fuente_mpl("texto") | {"size": 8}, handlelength=1.4, borderaxespad=0, frameon=False, **extra)
 
@@ -320,3 +323,94 @@ def a_png(fig, dpi=200):
     plt.close("all")
     buffer.seek(0)
     return buffer
+
+
+# ---------- evolucion (rango libre) ----------
+
+def evolucion_diaria(dia, unidad="S/", titulo="", kicker=""):
+    """Promedio diario (linea azul), banda entre minimo y maximo, punta (naranja) y promedio del periodo.
+
+    Los dias sin datos quedan en blanco (no se unen con una linea). Los dias que no estan
+    todos confirmados llevan un punto hueco.
+    """
+    p = paleta()
+    fig, ax = _fig()
+    if dia.empty:
+        return fig
+    completo = dia.set_index(pd.to_datetime(dia["fecha"])).reindex(
+        pd.date_range(pd.to_datetime(dia["fecha"]).min(), pd.to_datetime(dia["fecha"]).max(), freq="D"))
+    x = completo.index
+    ax.fill_between(x, completo["minimo"], completo["maximo"], color=p["celeste"], linewidth=0, label="Mínimo a máximo")
+    ax.plot(x, completo["punta"], color=p["naranja"], linewidth=1.4, label="Punta (6 a 11 p. m.)")
+    ax.plot(x, completo["promedio"], color=p["azul"], linewidth=2.2, label="Promedio del día")
+    prelim = completo[completo["confirmado"] == False]  # noqa: E712
+    if len(prelim):
+        ax.plot(prelim.index, prelim["promedio"], "o", markerfacecolor="white", markeredgecolor=p["azul"], markersize=5,
+                label="Preliminar")
+    media = dia["promedio"].mean()
+    ax.axhline(media, color=p["tinta"], linestyle=(0, (3, 3)), linewidth=1)
+    ax.text(x.max(), media, f" prom. {media:,.0f}", color=p["tinta"], fontsize=8, va="bottom", ha="right",
+            **fuente_mpl("texto", weight="semibold"))
+    import matplotlib.dates as mdates
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=10))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{mdates.num2date(v).day}/{mdates.num2date(v).month}"))
+    ax.yaxis.set_major_formatter(MILES)
+    fig.subplots_adjust(top=0.86)
+    ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.01), ncols=4, fontsize=8, frameon=False,
+              prop=fuente_mpl("texto") | {"size": 8})
+    _encabezado(fig, ax, titulo, kicker)
+    validos = completo.dropna(subset=["promedio"])
+    fig.hover.append((list(validos.index), list(validos["promedio"]),
+                      lambda t, v: f"{pd.Timestamp(t):%d/%m/%Y}\nPromedio: {unidad} {v:,.1f} por MWh"))
+    return fig
+
+
+def mapa_calor(matriz, unidad="S/", titulo="", kicker=""):
+    """Dias (filas) por media hora (columnas); color = precio. Muestra de un vistazo dias y horas caras."""
+    p = paleta()
+    alto = min(max(2.4, 0.11 * len(matriz) + 1.0), 7.5)
+    fig, ax = _fig(alto=alto)
+    if matriz.empty:
+        return fig
+    escala = LinearSegmentedColormap.from_list("calor", ["#EAF2FB", p["azul_claro"], "#F5C518", p["naranja"], "#B23A22"])
+    imagen = ax.imshow(matriz.values, aspect="auto", cmap=escala, interpolation="nearest")
+    ax.set_xticks([0, 12, 24, 36, 47])
+    ax.set_xticklabels(["0 h", "6 h", "12 h", "18 h", "24 h"])
+    paso = max(1, len(matriz) // 10)
+    ax.set_yticks(range(0, len(matriz), paso))
+    ax.set_yticklabels([f"{f.day}/{f.month}" for f in matriz.index[::paso]], fontsize=7.5)
+    ax.grid(False)
+    ax.spines["bottom"].set_visible(False)
+    barra = fig.colorbar(imagen, ax=ax, pad=0.01, fraction=0.035)
+    barra.outline.set_visible(False)
+    barra.ax.tick_params(labelsize=7, colors=p["gris"], length=0)
+    barra.set_label(f"{unidad} por MWh", fontsize=8, color=p["gris"])
+    _encabezado(fig, ax, titulo, kicker)
+    fig.subplots_adjust(left=0.07, right=0.97, bottom=0.08)
+    fig.hover = [("calor", None, None)]
+    fig.hover_calor = matriz
+    return fig
+
+
+def mensual_barras(mes, unidad="S/", titulo="", kicker=""):
+    """Promedio por mes (azul) y su punta (naranja)."""
+    p = paleta()
+    fig, ax = _fig(alto=2.6)
+    if mes.empty:
+        return fig
+    x = np.arange(len(mes))
+    nombres = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"]
+    etiquetas = [f"{nombres[m.month - 1]} {str(m.year)[2:]}" for m in mes["mes"]]
+    ax.bar(x - 0.18, mes["promedio"], width=0.36, color=p["azul"], label="Promedio")
+    ax.bar(x + 0.18, mes["punta"], width=0.36, color=p["naranja"], label="Punta")
+    for i, v in enumerate(mes["promedio"]):
+        ax.text(i - 0.18, v, f"{v:,.0f}", ha="center", va="bottom", fontsize=7.5, color=p["tinta"],
+                **fuente_mpl("texto", weight="semibold"))
+    ax.set_xticks(x)
+    ax.set_xticklabels(etiquetas)
+    ax.yaxis.set_major_formatter(MILES)
+    _leyenda(ax)
+    _encabezado(fig, ax, titulo, kicker)
+    fig.hover.append((list(x), list(mes["promedio"]),
+                      lambda i, v: f"{etiquetas[int(round(i))]}\nPromedio: {unidad} {v:,.1f} por MWh"))
+    return fig

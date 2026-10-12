@@ -243,6 +243,19 @@ class Grafico(tk.Frame):
                 self.nota.set_visible(False)
                 self.canvas.draw_idle()
             return
+        calor = getattr(self.fig, "hover_calor", None)
+        if calor is not None:
+            fila, col = int(round(evento.ydata)), int(round(evento.xdata))
+            if 0 <= fila < len(calor) and 0 <= col < 48:
+                valor = calor.iloc[fila, col]
+                if valor == valor:   # no es NaN
+                    dia = calor.index[fila]
+                    self._mostrar(col, fila, f"{dia.day}/{dia.month}  {col // 2}:{(col % 2) * 30:02d} h\n"
+                                             f"{valor:,.1f} por MWh")
+                    return
+            self.nota.set_visible(False)
+            self.canvas.draw_idle()
+            return
         mapa = getattr(self.fig, "hover_mapa", None)
         if mapa is not None:
             d = (mapa["longitud"] - evento.xdata) ** 2 + (mapa["latitud"] - evento.ydata) ** 2

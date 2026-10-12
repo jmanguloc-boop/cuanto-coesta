@@ -22,12 +22,12 @@ def test_app_escritorio_carga_todas_las_pestanas():
     app = escritorio.App()
     app.raiz.withdraw()
     inicio = time.time()
-    while (app.r is None or app.ocupado or app.pendientes) and time.time() - inicio < 90:
+    while (app.r is None or app.ev_datos is None or app.ocupado or app.pendientes) and time.time() - inicio < 150:
         app.raiz.update()
         time.sleep(0.05)
     try:
         assert app.r is not None, "la semana no termino de cargar"
-        assert len(app.paneles) == 9
+        assert len(app.paneles) == len(escritorio.SECCIONES) == 10
         for clave, panel in app.paneles.items():
             assert panel.interior.winfo_children(), f"pestana vacia: {clave}"
     finally:

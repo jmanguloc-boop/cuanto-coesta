@@ -28,3 +28,12 @@ rarezas:
   diferencia_minima: 60       # y alejarse al menos S/ 60 por MWh de la mediana
   salto_intervalo_pct: 0.40   # salto vs media hora anterior que se reporta como "salto brusco"
   salto_intervalo_min: 120    # ... y al menos estos S/ por MWh
+
+# Bloques horarios del dia (hora de inicio del intervalo de 30 min, hora Peru).
+# Punta: de 18:00 a 23:00, como se usa en el mercado peruano para potencia y contratos.
+bloques:
+  punta_desde: 18
+  punta_hasta: 23
+
+# Ano hidrologico peruano: de noviembre a octubre (avenida dic-abr, estiaje may-nov)
+mes_inicio_ano_hidrologico: 11

@@ -108,13 +108,34 @@ def actualizar_demanda(con, cliente, dias):
     return nuevos, revisados
 
 
+def dias_a_revisar(con, hoy, desde_ayer=False, maximo=7):
+    """Dias que hay que consultar: desde el ultimo dato guardado hasta hoy (rellena huecos).
+
+    Si la PC estuvo apagada, al abrir se completan los dias perdidos, hasta 'maximo' dias
+    atras (lo mas antiguo llega confirmado con el IEOD en la descarga semanal).
+    """
+    barra = config.fuentes()["barra_referencia"]
+    fila = con.execute("select max(fecha_hora) from cmg where barra = ?", (barra,)).fetchone()
+    if not fila or not fila[0]:
+        inicio = hoy - timedelta(days=1)
+    else:
+        ultimo = datetime.strptime(fila[0], "%Y-%m-%d %H:%M") - timedelta(minutes=1)
+        inicio = ultimo.date()
+    if desde_ayer:
+        inicio = min(inicio, hoy - timedelta(days=1))
+    inicio = max(inicio, hoy - timedelta(days=maximo - 1))
+    return [inicio + timedelta(days=i) for i in range((hoy - inicio).days + 1)]
+
+
 def actualizar(desde_ayer=False, cliente=None, ruta_db=None):
     """Una pasada completa. Si una fuente falla, se registra y sigue la otra. Devuelve un resumen."""
     cliente = cliente or ClienteCoes()
     hoy = ahora_peru().date()
-    dias = [hoy - timedelta(days=1), hoy] if desde_ayer else [hoy]
     resumen = {}
     with db.conectar(ruta_db) as con:
+        dias = dias_a_revisar(con, hoy, desde_ayer)
+        if len(dias) > 1:
+            log.info("Rellenando %s dias: %s a %s", len(dias), dias[0], dias[-1])
         for fuente, funcion in (("costo_marginal", actualizar_cmg), ("demanda", actualizar_demanda)):
             inicio = ahora_peru().isoformat(timespec="seconds")
             try:

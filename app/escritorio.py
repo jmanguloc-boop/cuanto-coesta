@@ -27,7 +27,8 @@ from src.narrative import generar_narrativa  # noqa: E402
 from src.utils import config, estado  # noqa: E402
 from src.utils.datos import ruta_tabla, semanas_disponibles  # noqa: E402
 from src.utils.estilo import familias_tk, registrar_fuentes_tk  # noqa: E402
-from src.utils.fechas import dia_y_hora, texto_semana, ultima_semana_completa  # noqa: E402
+from src.analysis import serie  # noqa: E402
+from src.utils.fechas import dia_y_hora, hoy_peru, texto_semana, ultima_semana_completa  # noqa: E402
 from src.utils.formato import numero, porcentaje  # noqa: E402
 from src.utils.logs import configurar_logging, obtener_logger  # noqa: E402
 from src.visual import graficos as G  # noqa: E402
@@ -38,7 +39,7 @@ PROYECTO = config.proyecto()
 GLOSARIO = config.glosario()
 
 SECCIONES = [
-    ("resumen", "Resumen", "▦"), ("ahora", "Ahora", "◷"), ("precios", "Precios", "↗"),
+    ("resumen", "Resumen", "▦"), ("ahora", "Ahora", "◷"), ("evolucion", "Evolución", "≋"), ("precios", "Precios", "↗"),
     ("demanda", "Demanda", "∿"), ("generacion", "Generación", "☀"), ("embalses", "Embalses", "◍"),
     ("mapa", "Mapa", "⌖"), ("fuentes", "Fuentes", "≡"), ("glosario", "Glosario", "?"),
 ]
@@ -121,6 +122,11 @@ class App:
         self.pendientes = []
         self.r = self.n = self.e = None
         self.auto = tk.BooleanVar(value=True)
+        # Estado de la seccion Evolucion
+        self.ev_datos = None
+        self.ev_barra = config.cargar_yaml("analisis")["barra_referencia"]
+        self.ev_moneda = "S/"
+        self.ev_desde, self.ev_hasta = serie.rango_atajo("30d", hoy_peru(), None)
         self.lista = semanas_completas()[::-1]
         self.indice_semana = 0
         if self.lista and ultima_semana_completa() in self.lista:
@@ -136,6 +142,15 @@ class App:
     def _construir(self):
         self.menu = ui.MenuLateral(self.raiz, PROYECTO["nombre"], SECCIONES, self.ir_a)
         self.menu.pack(side="left", fill="y")
+        # Actualizar ahora y sello de frescura, visibles desde cualquier seccion
+        vivo = tk.Frame(self.menu, bg=P["marino"])
+        vivo.pack(side="bottom", fill="x", pady=(0, 12))
+        self.sello = tk.Label(vivo, text="Sin datos en vivo", font=ui.fuente(9), bg=P["marino"], fg="#C9D8EA",
+                              justify="left", anchor="w")
+        self.sello.pack(fill="x", pady=(0, 8))
+        ui.boton(vivo, "↻  Actualizar ahora", self.actualizar_ahora,
+                 ayuda="Trae el último precio y la demanda del COES (segundos). Si la PC estuvo apagada, "
+                       "rellena los días que faltan.").pack(fill="x")
         derecha = tk.Frame(self.raiz, bg=P["papel"])
         derecha.pack(side="left", fill="both", expand=True)
         self.paneles = {}
@@ -227,10 +242,18 @@ class App:
         for vista in (self.vista_resumen, self.vista_precios, self.vista_demanda, self.vista_generacion,
                       self.vista_embalses, self.vista_mapa, self.vista_fuentes, self.vista_glosario):
             vista()
+        if self.ev_datos is None:
+            self.cargar_evolucion()
         self.avisar("Semana cargada.")
 
     def cargar_ahora(self):
-        self._en_fondo("Leyendo el último precio", estado_precio, self._mostrar_ahora)
+        """Al abrir: muestra lo guardado y, si tiene mas de 40 min (o hay huecos), consulta al COES."""
+        def listo(e):
+            self._mostrar_ahora(e)
+            if e.sin_datos or (e.antiguedad_min or 0) > 40:
+                self.actualizar_ahora()
+
+        self._en_fondo("Leyendo el último precio", estado_precio, listo)
 
     def actualizar_ahora(self):
         from src.ahora.extractor import actualizar
@@ -245,8 +268,21 @@ class App:
     def _mostrar_ahora(self, e):
         self.e = e
         self.vista_ahora()
+        self._frescura()
         if not e.sin_datos:
             self.avisar(f"Precio ahora: {soles(e.valor)} por MWh.")
+
+    def _frescura(self):
+        """Sello del menu lateral: hora del ultimo dato, antiguedad y estado."""
+        e = self.e
+        if e is None or e.sin_datos:
+            self.sello.configure(text="Sin datos en vivo", fg="#C9D8EA")
+            return
+        antig = e.antiguedad_min or 0
+        viejo = antig > 60
+        cuando = f"hace {antig:.0f} min" if antig < 120 else f"hace {antig / 60:.0f} h"
+        self.sello.configure(text=f"● Último dato {hora_corta(e.momento)}\n   {cuando} · preliminar",
+                             fg=P["naranja"] if viejo else "#9BE0B8")
 
     def descargar_semana(self):
         import run_weekly
@@ -671,6 +707,142 @@ class App:
         aviso = tk.Frame(fila, bg=P["celeste"], padx=18, pady=16)
         aviso.grid(row=0, column=1, sticky="nsew")
         ui.texto(aviso, " ".join(PROYECTO["aviso"].split()), 10, bg=P["celeste"], ancho=420).pack(anchor="w")
+
+    # ----- evolucion (rango libre) -----
+
+    def cargar_evolucion(self, atajo=None):
+        """Lee la serie continua del rango elegido (y el tipo de cambio si se pide USD)."""
+        if atajo:
+            self.ev_desde, self.ev_hasta = serie.rango_atajo(atajo, hoy_peru(), serie.primera_fecha())
+        desde, hasta, barra, moneda = self.ev_desde, self.ev_hasta, self.ev_barra, self.ev_moneda
+
+        def tarea():
+            datos = serie.cmg_rango(desde, hasta, barra)
+            if moneda == "USD":
+                from src.extract import bcrp
+                datos = serie.en_dolares(datos, bcrp.actualizar(desde, hasta))
+            return datos
+
+        def listo(datos):
+            self.ev_datos = datos
+            self.vista_evolucion()
+
+        self._en_fondo("Armando la evolución", tarea, listo)
+
+    def _rango_escrito(self):
+        from datetime import date
+        try:
+            desde = date.fromisoformat(self.ev_entrada_desde.get().strip())
+            hasta = date.fromisoformat(self.ev_entrada_hasta.get().strip())
+        except ValueError:
+            self.avisar("Fechas no válidas: usa el formato AAAA-MM-DD (por ejemplo 2026-09-01).")
+            return
+        if hasta < desde:
+            desde, hasta = hasta, desde
+        self.ev_desde, self.ev_hasta = desde, hasta
+        self.cargar_evolucion()
+
+    def _cambiar_barra(self, _e=None):
+        self.ev_barra = self.ev_combo_barra.get()
+        self.cargar_evolucion()
+
+    def _cambiar_moneda(self, moneda):
+        self.ev_moneda = moneda
+        self.cargar_evolucion()
+
+    def exportar_excel(self):
+        from tkinter import filedialog
+        if self.ev_datos is None or self.ev_datos.empty:
+            self.avisar("No hay datos para exportar en este rango.")
+            return
+        nombre = f"cmg_{self.ev_barra.replace(' ', '_').lower()}_{self.ev_desde}_{self.ev_hasta}.xlsx"
+        ruta = filedialog.asksaveasfilename(defaultextension=".xlsx", initialfile=nombre,
+                                            filetypes=[("Excel", "*.xlsx")], title="Guardar como Excel")
+        if not ruta:
+            return
+        datos, barra, moneda = self.ev_datos, self.ev_barra, self.ev_moneda
+        self._en_fondo("Exportando a Excel", lambda: serie.exportar_excel(datos, ruta, barra, moneda),
+                       lambda r: (self.avisar(f"Excel guardado: {r}"), abrir_archivo(r)))
+
+    def vista_evolucion(self):
+        panel = self.paneles["evolucion"]
+        panel.limpiar()
+        c = panel.interior
+        datos, moneda = self.ev_datos, self.ev_moneda
+        unidad = "USD" if moneda == "USD" else "S/"
+
+        def dinero(v):
+            return "s/d" if v is None or v != v else f"{unidad} {numero(v, 1)}"
+
+        self._cabecera(c, "Evolución del precio", f"{self.ev_barra.title()} · del {self.ev_desde:%d/%m/%Y} al "
+                                                  f"{self.ev_hasta:%d/%m/%Y}")
+        # Controles: atajos, fechas, barra, moneda, exportar
+        controles = ui.tarjeta(c, 18, 12)
+        controles.pack(fill="x", pady=(0, 16))
+        fila1 = tk.Frame(controles, bg="#FFFFFF")
+        fila1.pack(fill="x")
+        for etiqueta, atajo in (("7 días", "7d"), ("30 días", "30d"), ("Este mes", "mes"),
+                                ("Año hidrológico", "hidro"), ("Este año", "anio"), ("Todo", "todo")):
+            ui.boton(fila1, etiqueta, lambda a=atajo: self.cargar_evolucion(a), primario=False).pack(side="left", padx=(0, 6))
+        ui.boton(fila1, "Exportar a Excel", self.exportar_excel,
+                 ayuda="Guarda cada media hora del rango y el resumen diario en un Excel.").pack(side="right")
+        fila2 = tk.Frame(controles, bg="#FFFFFF")
+        fila2.pack(fill="x", pady=(12, 0))
+        ui.texto(fila2, "Desde", 9, P["gris"], "bold", bg="#FFFFFF").pack(side="left")
+        self.ev_entrada_desde = ttk.Entry(fila2, width=11, font=ui.fuente(10))
+        self.ev_entrada_desde.insert(0, f"{self.ev_desde:%Y-%m-%d}")
+        self.ev_entrada_desde.pack(side="left", padx=(6, 12))
+        ui.texto(fila2, "Hasta", 9, P["gris"], "bold", bg="#FFFFFF").pack(side="left")
+        self.ev_entrada_hasta = ttk.Entry(fila2, width=11, font=ui.fuente(10))
+        self.ev_entrada_hasta.insert(0, f"{self.ev_hasta:%Y-%m-%d}")
+        self.ev_entrada_hasta.pack(side="left", padx=(6, 8))
+        ui.boton(fila2, "Ver", self._rango_escrito).pack(side="left", padx=(0, 18))
+        ui.texto(fila2, "Barra", 9, P["gris"], "bold", bg="#FFFFFF").pack(side="left")
+        self.ev_combo_barra = ttk.Combobox(fila2, state="readonly", width=24, values=serie.barras_disponibles(),
+                                           font=ui.fuente(10))
+        self.ev_combo_barra.set(self.ev_barra)
+        self.ev_combo_barra.bind("<<ComboboxSelected>>", self._cambiar_barra)
+        self.ev_combo_barra.pack(side="left", padx=(6, 18))
+        for m in ("S/", "USD"):
+            ui.boton(fila2, m, lambda x=m: self._cambiar_moneda(x), primario=(m == moneda)).pack(side="left", padx=(0, 4))
+
+        if datos is None or datos.empty:
+            ui.texto(c, "No hay datos en este rango. Prueba otro rango o pulsa «Actualizar» en Resumen.", 12).pack(anchor="w")
+            return
+        r = serie.resumir(datos, self.ev_desde, self.ev_hasta, self.ev_barra, moneda)
+        self._cifras(c, [
+            dict(etiqueta="Promedio (todo el día)", valor=dinero(r.base), unidad="por MWh",
+                 explicacion="Promedio de todas las medias horas del rango."),
+            dict(etiqueta="Punta (6 a 11 p. m.)", valor=dinero(r.punta), unidad="por MWh",
+                 cambio=(f"{(r.punta / r.base - 1) * 100:+.0f}% vs promedio" if r.punta and r.base else ""),
+                 tono="alerta" if r.punta and r.base and r.punta > r.base * 1.1 else "neutro",
+                 explicacion="Las horas de mayor consumo. Los contratos y la potencia se miran en este bloque."),
+            dict(etiqueta="Fuera de punta", valor=dinero(r.fuera_punta), unidad="por MWh",
+                 explicacion="Todas las horas menos las de punta."),
+            dict(etiqueta="Más alto", valor=dinero(r.maximo), detalle=dia_y_hora(r.momento_max) if r.momento_max is not None else "",
+                 explicacion=explicacion("cmg_maximo")),
+            dict(etiqueta="Más bajo", valor=dinero(r.minimo), detalle=dia_y_hora(r.momento_min) if r.momento_min is not None else "",
+                 explicacion=explicacion("cmg_minimo")),
+        ])
+        calidad = (f"{r.cobertura * 100:.0f}% de las medias horas con dato · {r.dias} días · "
+                   f"{r.dias_preliminares} días con datos preliminares (punto hueco en el gráfico)")
+        if r.congestion_media is not None:
+            calidad += f" · congestión media {unidad} {r.congestion_media:,.1f}"
+        if moneda == "USD":
+            calidad += " · tipo de cambio BCRP (venta)"
+        ui.texto(c, calidad, 9, P["gris"]).pack(anchor="w", pady=(0, 12))
+
+        dia = serie.diario(datos)
+        self._tarjeta_grafico(c, "Precio día por día", G.evolucion_diaria(dia, unidad), f"{unidad} por MWh",
+                              alto=300).pack(fill="x", pady=(0, 16))
+        matriz = serie.matriz_calor(datos)
+        alto_calor = int(min(max(240, 11 * len(matriz) + 110), 720))
+        self._tarjeta_grafico(c, "Mapa de calor: cada día, cada media hora", G.mapa_calor(matriz, unidad),
+                              "más oscuro = más caro", alto=alto_calor).pack(fill="x", pady=(0, 16))
+        mes = serie.mensual(datos)
+        if len(mes) > 1:
+            self._tarjeta_grafico(c, "Promedio por mes", G.mensual_barras(mes, unidad), f"{unidad} por MWh",
+                                  alto=260).pack(fill="x")
 
     def vista_glosario(self):
         panel = self.paneles["glosario"]
