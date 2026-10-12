@@ -324,8 +324,8 @@ class App:
         ui.texto(izq, titulo, 22, peso="xbold").pack(anchor="w")
         ui.texto(izq, subtitulo, 11, P["gris"]).pack(anchor="w", pady=(2, 0))
         if con_controles:
-            der = tk.Frame(fila, bg=P["papel"])
-            der.pack(side="right")
+            der = tk.Frame(cont, bg=P["papel"])
+            der.pack(fill="x", pady=(0, 18))
             ui.texto(der, "Semana", 9, P["gris"], "bold").pack(side="left", padx=(0, 8))
             self.combo = ttk.Combobox(der, state="readonly", width=28,
                                       values=[rango_corto(s) for s in self.lista], font=ui.fuente(10))
@@ -346,8 +346,10 @@ class App:
 
     def _cifras(self, cont, celdas):
         fila = self._fila(cont, [1] * len(celdas))
+        tam = 26 if len(celdas) <= 4 else 20     # con 5 tarjetas por fila, cifras mas chicas para que no se corten
         for i, c in enumerate(celdas):
-            ui.tarjeta_cifra(fila, **c).grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 14, 0))
+            ui.tarjeta_cifra(fila, tam=c.pop("tam", tam), **c).grid(row=0, column=i, sticky="nsew",
+                                                                    padx=(0 if i == 0 else 14, 0))
 
     def _tarjeta_grafico(self, padre, titulo, fig, nota="", alto=None):
         t = ui.tarjeta(padre)
@@ -377,7 +379,11 @@ class App:
         banda = tk.Frame(c, bg=P["celeste"], padx=18, pady=14)
         banda.pack(fill="x", pady=(0, 18))
         prom = r.ind("cmg_promedio")
-        icono = "▼" if prom.var_anterior is not None and prom.var_anterior < 0 else "▲"
+        primero = r.hechos[0] if r.hechos else None
+        if primero is not None and primero.tipo == "variacion":
+            icono = "▲" if primero.datos["var"] > 0 else "▼"
+        else:
+            icono = "★" if primero is not None and primero.tipo == "record" else "●"
         tk.Label(banda, text=icono, font=ui.fuente(14, "bold"), bg=P["azul"], fg="#FFFFFF", width=3, pady=4).pack(side="left")
         ui.texto(banda, n.titulares[0] if n.titulares else r.texto_semana, 14, peso="bold", bg=P["celeste"]).pack(
             side="left", padx=(14, 0))
@@ -507,7 +513,7 @@ class App:
 
         prog = self.prog or {}
         hoy_prog, manana = prog.get("hoy"), prog.get("manana")
-        fila = self._fila(c, [5, 3], uniforme=False)
+        fila = self._fila(c, [3, 2], uniforme=False)
         self._tarjeta_grafico(fila, "Hoy frente a ayer y a lo programado",
                               G.ahora(e.serie_hoy, e.serie_ayer, programado=hoy_prog), alto=260).grid(
             row=0, column=0, sticky="nsew", padx=(0, 14))
@@ -520,21 +526,21 @@ class App:
                 plan = float(mismo["cmg_soles"].iloc[0])
                 dif = e.valor / plan - 1 if plan else 0
                 tono_p = "alerta" if dif > 0.3 else ("info" if dif < -0.3 else "neutro")
-                ui.tarjeta_cifra(lado, "Programado para esta hora", soles(plan), "por MWh",
+                ui.tarjeta_cifra(lado, "Programado a esta hora", soles(plan), "por MWh",
                                  f"El real va {abs(dif) * 100:.0f}% {'arriba' if dif > 0 else 'abajo'}", tono_p,
                                  "Costo marginal que el COES calculó el día anterior en su Programa Diario de "
-                                 "Operación (modelo YUPANA, en dólares, convertido a soles con el tipo de cambio BCRP)."
-                                 ).pack(fill="x", pady=(0, 14))
+                                 "Operación (modelo YUPANA, en dólares, convertido a soles con el tipo de cambio BCRP).",
+                                 tam=20).pack(fill="x", pady=(0, 14))
         if manana is not None and len(manana):
             imax = manana["cmg_soles"].idxmax()
             pico = manana.loc[imax, "fecha_hora"]
             ui.tarjeta_cifra(lado, "Mañana se espera", soles(manana["cmg_soles"].mean()), "por MWh en promedio",
                              f"pico de {soles(manana.loc[imax, 'cmg_soles'])} a las {hora_corta(pico)}", "info",
                              "Programa Diario de Operación del COES para mañana. Es una previsión: el precio real "
-                             "puede ser muy distinto si cambian el agua, la demanda o salen centrales.").pack(
+                             "puede ser muy distinto si cambian el agua, la demanda o salen centrales.", tam=20).pack(
                 fill="x", pady=(0, 14))
         else:
-            ui.texto(lado, "El programa de mañana lo publica el COES por la tarde.", 9, P["gris"]).pack(
+            ui.texto(lado, "El programa de mañana lo publica el COES por la tarde.", 9, P["gris"], ancho=300).pack(
                 anchor="w", pady=(0, 10))
         if e.demanda:
             d = e.demanda
@@ -546,7 +552,7 @@ class App:
             else:
                 txt, tono_d = f"{desvio * 100:+.1f}% vs lo previsto", "info"
             ui.tarjeta_cifra(lado, "Consumo del país", numero(d["valor"]), "MW", txt, tono_d,
-                             explicacion("demanda_maxima")).pack(fill="x")
+                             explicacion("demanda_maxima"), tam=20).pack(fill="x")
         nota = tk.Frame(lado, bg=P["celeste"], padx=16, pady=14)
         nota.pack(fill="x", pady=(14, 0))
         ui.texto(nota, "Dato preliminar: el COES lo confirma en 1 o 2 días.", 10, bg=P["celeste"], ancho=260).pack(anchor="w")
@@ -826,9 +832,6 @@ class App:
         combo.set(central)
         combo.bind("<<ComboboxSelected>>", lambda e: self.vista_centrales(combo.get()))
         combo.pack(side="left", padx=(8, 16))
-        if not config.interno().get("mis_centrales"):
-            ui.texto(sel, "Tip: pon tus centrales en config/interno.yaml para verlas primero.", 9, P["gris"],
-                     bg="#FFFFFF").pack(side="left")
         barra, aproximada = centrales.barra_de(central)
         cmg = serie.cmg_rango(r.desde, r.hasta, barra)
         d = centrales.detalle_central(cen, central, cmg)
@@ -881,6 +884,7 @@ class App:
         def listo(datos):
             self.ev_datos = datos
             self.vista_evolucion()
+            self.avisar("Listo.")
 
         self._en_fondo("Armando la evolución", tarea, listo)
 
@@ -966,7 +970,7 @@ class App:
             return
         r = serie.resumir(datos, self.ev_desde, self.ev_hasta, self.ev_barra, moneda)
         self._cifras(c, [
-            dict(etiqueta="Promedio (todo el día)", valor=dinero(r.base), unidad="por MWh",
+            dict(etiqueta="Promedio", valor=dinero(r.base), unidad="por MWh (todo el día)",
                  explicacion="Promedio de todas las medias horas del rango."),
             dict(etiqueta="Punta (6 a 11 p. m.)", valor=dinero(r.punta), unidad="por MWh",
                  cambio=(f"{(r.punta / r.base - 1) * 100:+.0f}% vs promedio" if r.punta and r.base else ""),

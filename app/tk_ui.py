@@ -61,7 +61,8 @@ def texto(padre, contenido, tam=10, color=None, peso="normal", bg=None, ancho=0)
 def etiqueta_cambio(padre, contenido, tono="neutro"):
     """Pildora de color con el cambio (▲ 3.2%)."""
     fondo, color = TONOS[tono]
-    return tk.Label(padre, text=contenido, font=fuente(9, "bold"), bg=fondo, fg=color, padx=10, pady=3)
+    return tk.Label(padre, text=contenido, font=fuente(9, "bold"), bg=fondo, fg=color, padx=10, pady=3,
+                    wraplength=220, justify="left")
 
 
 # ---------- tooltip ----------
@@ -123,7 +124,7 @@ def tarjeta(padre, padx=22, pady=18):
     return tk.Frame(padre, bg="#FFFFFF", padx=padx, pady=pady, highlightthickness=1, highlightbackground="#E3EAF2")
 
 
-def tarjeta_cifra(padre, etiqueta, valor, unidad="", cambio="", tono="neutro", explicacion="", detalle=""):
+def tarjeta_cifra(padre, etiqueta, valor, unidad="", cambio="", tono="neutro", explicacion="", detalle="", tam=None):
     """Tarjeta de una cifra: nombre, numero grande, unidad y etiqueta de cambio."""
     t = tarjeta(padre, 20, 16)
     cabecera = tk.Frame(t, bg="#FFFFFF")
@@ -131,16 +132,18 @@ def tarjeta_cifra(padre, etiqueta, valor, unidad="", cambio="", tono="neutro", e
     texto(cabecera, etiqueta, 10, P["gris"], "bold").pack(side="left")
     if explicacion:
         boton_info(cabecera, explicacion).pack(side="right")
-    fila = tk.Frame(t, bg="#FFFFFF")
-    fila.pack(fill="x", pady=(8, 6))
-    tk.Label(fila, text=valor, font=fuente(26, "xbold"), fg=P["marino"], bg="#FFFFFF").pack(side="left")
+    # Cifras largas un poco mas chicas, para que no se corten en tarjetas angostas
+    tam = tam or (26 if len(valor) <= 8 else (22 if len(valor) <= 10 else 19))
+    if len(valor) > 9:
+        tam = min(tam, 19)
+    tk.Label(t, text=valor, font=fuente(tam, "xbold"), fg=P["marino"], bg="#FFFFFF", anchor="w").pack(
+        fill="x", pady=(8, 0))
     if unidad:
-        tk.Label(fila, text=unidad, font=fuente(10, "bold"), fg=P["gris"], bg="#FFFFFF").pack(side="left", padx=(6, 0),
-                                                                                             pady=(10, 0))
+        tk.Label(t, text=unidad, font=fuente(9, "bold"), fg=P["gris"], bg="#FFFFFF", anchor="w").pack(fill="x")
     if cambio:
-        etiqueta_cambio(t, cambio, tono).pack(anchor="w")
+        etiqueta_cambio(t, cambio, tono).pack(anchor="w", pady=(6, 0))
     if detalle:
-        texto(t, detalle, 9, P["gris"]).pack(anchor="w", pady=(4, 0))
+        texto(t, detalle, 9, P["gris"], ancho=170).pack(anchor="w", pady=(6, 0))
     return t
 
 
@@ -183,16 +186,16 @@ class MenuLateral(tk.Frame):
     """Menu azul marino con las secciones; marca la activa."""
 
     def __init__(self, padre, nombre, secciones, al_elegir):
-        super().__init__(padre, bg=P["marino"], width=236, padx=16, pady=24)
+        super().__init__(padre, bg=P["marino"], width=252, padx=16, pady=24)
         self.pack_propagate(False)
         self.items, self.al_elegir, self.activa = {}, al_elegir, None
         logo = tk.Frame(self, bg=P["marino"])
         logo.pack(fill="x", pady=(0, 26))
         tk.Label(logo, text="⚡", font=fuente(14, "bold"), bg=P["naranja"], fg=P["marino"], width=2).pack(side="left")
         partes = nombre.split(" ", 1)
-        tk.Label(logo, text=" " + partes[0], font=fuente(15, "xbold"), bg=P["marino"], fg="#FFFFFF").pack(side="left")
+        tk.Label(logo, text=" " + partes[0], font=fuente(14, "xbold"), bg=P["marino"], fg="#FFFFFF").pack(side="left")
         if len(partes) > 1:
-            tk.Label(logo, text=" " + partes[1], font=fuente(15, "xbold"), bg=P["marino"], fg=P["azul_claro"]).pack(side="left")
+            tk.Label(logo, text=" " + partes[1], font=fuente(14, "xbold"), bg=P["marino"], fg=P["azul_claro"]).pack(side="left")
         for clave, etiqueta, icono in secciones:
             item = tk.Label(self, text=f"  {icono}   {etiqueta}", font=fuente(11), bg=P["marino"], fg="#C9D8EA",
                             anchor="w", padx=10, pady=7, cursor="hand2")
@@ -226,7 +229,8 @@ class Grafico(tk.Frame):
         self.fig = fig
         self.canvas = FigureCanvasTkAgg(fig, master=self)
         widget = self.canvas.get_tk_widget()
-        widget.configure(bg="#FFFFFF", highlightthickness=0)
+        # Pide poco ancho: el grafico se estira a lo que le de su columna (no aplasta a las tarjetas vecinas)
+        widget.configure(bg="#FFFFFF", highlightthickness=0, width=320)
         if alto:
             widget.configure(height=alto)
         widget.pack(fill="both", expand=True)
