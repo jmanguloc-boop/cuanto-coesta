@@ -19,24 +19,24 @@ DIR_FUENTES = config.RAIZ / "assets" / "fuentes"
 DIR_MAPAS = config.RAIZ / "assets" / "mapas"
 
 ARCHIVOS = {
-    ("titulares", ""): "BarlowCondensed-SemiBold.ttf",
-    ("titulares", "B"): "BarlowCondensed-Bold.ttf",
-    ("texto", ""): "Barlow-Regular.ttf",
-    ("texto", "B"): "Barlow-SemiBold.ttf",
-    ("texto", "I"): "Barlow-Italic.ttf",
-    ("texto", "M"): "Barlow-Medium.ttf",
-    ("mono", ""): "IBMPlexMono-Regular.ttf",
-    ("mono", "B"): "IBMPlexMono-Medium.ttf",
+    ("titulares", ""): "PlusJakartaSans-Bold.ttf",
+    ("titulares", "B"): "PlusJakartaSans-ExtraBold.ttf",
+    ("texto", ""): "PlusJakartaSans-Regular.ttf",
+    ("texto", "B"): "PlusJakartaSans-Bold.ttf",
+    ("texto", "I"): "PlusJakartaSans-Italic.ttf",
+    ("texto", "M"): "PlusJakartaSans-Medium.ttf",
+    ("texto", "S"): "PlusJakartaSans-SemiBold.ttf",
+    ("mono", ""): "PlusJakartaSans-Medium.ttf",
+    ("mono", "B"): "PlusJakartaSans-SemiBold.ttf",
 }
 
-# Alternativas por sistema si las fuentes del proyecto no cargan
 # matplotlib siempre trae DejaVu: es el respaldo seguro para graficos y PDF
-RESPALDO_MPL = {"titulares": ["DejaVu Sans"], "texto": ["DejaVu Sans"], "mono": ["DejaVu Sans Mono"]}
+RESPALDO_MPL = {"titulares": ["DejaVu Sans"], "texto": ["DejaVu Sans"], "mono": ["DejaVu Sans"]}
 
 RESPALDO = {
-    "titulares": ["Bahnschrift SemiBold Condensed", "Arial Narrow", "Avenir Next Condensed", "DejaVu Sans Condensed"],
+    "titulares": ["Segoe UI Semibold", "Segoe UI", "Helvetica Neue", "DejaVu Sans"],
     "texto": ["Segoe UI", "Helvetica Neue", "Arial", "DejaVu Sans"],
-    "mono": ["Consolas", "Menlo", "Courier New", "DejaVu Sans Mono"],
+    "mono": ["Segoe UI", "Helvetica Neue", "DejaVu Sans"],
 }
 
 
@@ -77,6 +77,7 @@ def preparar_matplotlib():
         "font.family": [familia("texto")] + RESPALDO_MPL["texto"],
         "font.size": 8,
         "axes.facecolor": p["blanco"],
+        "font.weight": "medium",
         "figure.facecolor": p["blanco"],
         "axes.edgecolor": p["linea"],
         "axes.labelcolor": p["gris"],
@@ -122,9 +123,6 @@ def familias_tk(raiz_tk):
     elegidas = {}
     for rol in ("titulares", "texto", "mono"):
         opciones = [familia(rol)] + RESPALDO[rol]
-        if rol == "titulares":
-            # En Windows la variante condensada se registra con su propio nombre
-            opciones = ["Barlow Condensed SemiBold", "Barlow Condensed"] + opciones
         elegidas[rol] = next((f for f in opciones if f in disponibles), "TkDefaultFont")
     return elegidas
 

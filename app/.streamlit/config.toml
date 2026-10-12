@@ -1,10 +1,10 @@
 # Colores copiados de config/proyecto.yaml (paleta). tests/test_app.py verifica que coincidan.
 [theme]
 base = "light"
-primaryColor = "#171916"
-backgroundColor = "#F1F0E8"
-secondaryBackgroundColor = "#FBFAF5"
-textColor = "#171916"
+primaryColor = "#0E2A47"
+backgroundColor = "#F4F7FB"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0E2A47"
 font = "sans serif"
 
 [server]

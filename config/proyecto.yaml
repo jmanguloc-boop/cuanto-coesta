@@ -9,49 +9,53 @@ aviso: >
   Proyecto independiente, no afiliado al COES. Usa datos públicos del portal
   www.coes.org.pe, que pueden ser preliminares y cambiar después.
 
-# Identidad editorial: "periodismo de datos industrial".
-# Papel calido, carbon, verde profundo y lima electrica. El oscuro se reserva
-# para los instrumentos (precio en vivo, curvas), no para toda la pantalla.
+# Identidad: amigable e institucional, inspirada en los azules del sector electrico.
+# Fondo gris azulado muy claro, tarjetas blancas, azul marino y azul vivo, y un
+# naranja "energia" solo para lo que pide atencion. Paleta propia (no copia la marca del COES).
 paleta:
-  # Claves editoriales
-  tinta: "#171916"        # carbon: texto y bloques oscuros
-  papel: "#F1F0E8"        # fondo general
-  blanco: "#FBFAF5"       # paneles
-  lima: "#D5FF42"         # acento electrico (resaltar, nunca para texto sobre papel)
-  verde: "#315D45"        # verde profundo: titulares de seccion, series principales
-  gris: "#77796F"         # texto secundario, etiquetas
-  linea: "#CBCFC2"        # reglas y bordes
-  cobre: "#E46F3D"        # alertas y marcas puntuales
-  mineral: "#43483F"      # grafito para lineas sobre fondo oscuro
-  # Claves funcionales (las usan dashboard web, PDF y tests)
-  primario: "#171916"
-  secundario: "#315D45"
-  acento: "#E46F3D"
-  fondo: "#F1F0E8"
-  fondo_suave: "#FBFAF5"
-  texto: "#171916"
-  texto_suave: "#77796F"
-  sube: "#B5452A"         # cambio desfavorable
-  baja: "#315D45"         # cambio favorable
+  marino: "#0E2A47"       # menu lateral, textos principales
+  azul: "#1565C0"         # botones, series principales
+  celeste: "#E3EEFA"      # resaltados suaves, areas de graficos
+  azul_claro: "#7FB8F0"   # barras secundarias
+  naranja: "#F28C1E"      # alertas y maximos
+  naranja_texto: "#B04F00"
+  # Claves usadas por graficos y PDF (mismos colores con nombres funcionales)
+  tinta: "#0E2A47"
+  papel: "#F4F7FB"
+  blanco: "#FFFFFF"
+  lima: "#F28C1E"
+  verde: "#1565C0"
+  gris: "#5B6B7D"
+  linea: "#D5DFEA"
+  cobre: "#F28C1E"
+  mineral: "#16375A"
+  primario: "#0E2A47"
+  secundario: "#1565C0"
+  acento: "#F28C1E"
+  fondo: "#F4F7FB"
+  fondo_suave: "#FFFFFF"
+  texto: "#0E2A47"
+  texto_suave: "#5B6B7D"
+  sube: "#B23A22"         # cambio desfavorable
+  baja: "#1E7A50"         # cambio favorable
 
-# Tipografia (archivos en assets/fuentes, licencia OFL). Si no cargan, se usan
-# alternativas del sistema (ver src/utils/estilo.py).
+# Tipografia (assets/fuentes, licencia OFL). Una sola familia, en varios pesos.
 tipografia:
-  titulares: "Barlow Condensed"   # cifras y titulares, en mayusculas
-  texto: "Barlow"
-  mono: "IBM Plex Mono"           # etiquetas, metadatos, fechas
+  titulares: "Plus Jakarta Sans"
+  texto: "Plus Jakarta Sans"
+  mono: "Plus Jakarta Sans"
 
-# Un color fijo por tecnologia en todos los graficos (tonos editoriales)
+# Un color fijo por tecnologia en todos los graficos
 tecnologias:
-  hidro:    {nombre: "Hidroeléctrica",    color: "#4A7A96"}
-  gas:      {nombre: "Gas natural",       color: "#C98A3C"}
-  solar:    {nombre: "Solar",             color: "#E3B505"}
-  eolica:   {nombre: "Eólica",            color: "#5AA595"}
-  diesel:   {nombre: "Diésel y residual", color: "#3A3D36"}
+  hidro:    {nombre: "Hidroeléctrica",    color: "#2F80D1"}
+  gas:      {nombre: "Gas natural",       color: "#F2A33A"}
+  solar:    {nombre: "Solar",             color: "#F5C518"}
+  eolica:   {nombre: "Eólica",            color: "#2BB3A3"}
+  diesel:   {nombre: "Diésel y residual", color: "#4A5563"}
   carbon:   {nombre: "Carbón",            color: "#7A5235"}
-  biomasa:  {nombre: "Biomasa",           color: "#6F8F3A"}
-  termica:  {nombre: "Térmica",           color: "#C98A3C"}
-  otros:    {nombre: "Otros",             color: "#B9BBB0"}
+  biomasa:  {nombre: "Biomasa",           color: "#6FA84B"}
+  termica:  {nombre: "Térmica",           color: "#F2A33A"}
+  otros:    {nombre: "Otros",             color: "#B9C7D6"}
 
 # Orden de apilado en graficos (de base a tope)
 orden_tecnologias: [hidro, gas, eolica, solar, biomasa, carbon, diesel, otros]

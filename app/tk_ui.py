@@ -1,4 +1,4 @@
-"""Componentes Tkinter con la identidad editorial de Cuanto COESta.
+"""Componentes Tkinter de Cuanto COESta: tarjetas blancas, etiquetas de cambio y menu lateral.
 
 Solo usa la biblioteca estandar (tkinter) mas matplotlib, que ya es dependencia del proyecto.
 """
@@ -14,82 +14,77 @@ from src.narrative import pulir
 from src.utils.estilo import paleta
 
 P = paleta()
-F = {"titulares": "TkDefaultFont", "texto": "TkDefaultFont", "mono": "TkFixedFont"}   # se completa en configurar()
+F = {"texto": "TkDefaultFont", "fuerte": "TkDefaultFont"}   # se completa en configurar()
+
+# Estados de una etiqueta de cambio: (fondo, texto)
+TONOS = {
+    "bueno": ("#E6F4EC", "#1E7A50"),
+    "malo": ("#FBE7E3", "#B23A22"),
+    "neutro": ("#EEF2F7", "#41536A"),
+    "alerta": (P["naranja"], P["marino"]),
+    "info": (P["celeste"], P["azul"]),
+}
 
 
 def configurar(raiz, familias):
-    """Guarda las familias tipograficas elegidas y define los estilos ttk."""
-    F.update(familias)
+    """Elige las familias tipograficas y define los estilos ttk."""
+    from tkinter import font as tkfont
+    disponibles = set(tkfont.families(raiz))
+    F["texto"] = familias["texto"]
+    F["fuerte"] = "Plus Jakarta Sans ExtraBold" if "Plus Jakarta Sans ExtraBold" in disponibles else familias["texto"]
     raiz.configure(bg=P["papel"])
     estilo = ttk.Style(raiz)
     estilo.theme_use("clam")
-    estilo.configure(".", background=P["papel"], foreground=P["tinta"], font=(F["texto"], 10))
-    estilo.configure("TNotebook", background=P["papel"], borderwidth=0, tabmargins=(0, 6, 0, 0))
-    estilo.configure("TNotebook.Tab", background=P["papel"], foreground=P["gris"], padding=(12, 7),
-                     font=(F["mono"], 9), borderwidth=0)
-    estilo.map("TNotebook.Tab", background=[("selected", P["tinta"])], foreground=[("selected", P["lima"])])
-    estilo.configure("TCombobox", fieldbackground=P["blanco"], background=P["blanco"], arrowcolor=P["tinta"],
-                     bordercolor=P["linea"], lightcolor=P["blanco"], darkcolor=P["blanco"])
+    estilo.configure(".", background=P["papel"], foreground=P["marino"], font=(F["texto"], 10))
+    estilo.configure("TCombobox", fieldbackground="#FFFFFF", background="#FFFFFF", arrowcolor=P["marino"],
+                     bordercolor=P["linea"], lightcolor="#FFFFFF", darkcolor="#FFFFFF", padding=6)
     estilo.configure("Vertical.TScrollbar", background=P["linea"], troughcolor=P["papel"], borderwidth=0,
                      arrowcolor=P["gris"])
     raiz.option_add("*TCombobox*Listbox.font", (F["texto"], 10))
 
 
+def fuente(tam, peso="normal"):
+    """Tupla de fuente: peso 'normal', 'bold' o 'xbold' (cifras grandes)."""
+    if peso == "xbold":
+        return (F["fuerte"], tam) if F["fuerte"] != F["texto"] else (F["texto"], tam, "bold")
+    return (F["texto"], tam, "bold") if peso == "bold" else (F["texto"], tam)
+
+
 # ---------- textos ----------
 
-def kicker(padre, texto, color=None, bg=None):
-    """Etiqueta en mono mayuscula: '01 / LA SENAL DE LA SEMANA'."""
-    return tk.Label(padre, text=texto.upper(), font=(F["mono"], 8), fg=color or P["verde"], bg=bg or padre["bg"],
-                    anchor="w", justify="left")
+def texto(padre, contenido, tam=10, color=None, peso="normal", bg=None, ancho=0):
+    """Etiqueta de texto (envuelve si se da ancho en px)."""
+    return tk.Label(padre, text=pulir(contenido), font=fuente(tam, peso), fg=color or P["marino"],
+                    bg=bg or padre["bg"], anchor="w", justify="left", wraplength=ancho)
 
 
-def titular(padre, texto, tam=30, color=None, bg=None, ancho=760):
-    """Titular condensado grande."""
-    return tk.Label(padre, text=texto, font=(F["titulares"], tam, "bold"), fg=color or P["tinta"], bg=bg or padre["bg"],
-                    anchor="w", justify="left", wraplength=ancho)
-
-
-def parrafo(padre, texto, tam=10, color=None, bg=None, ancho=760):
-    """Texto corrido."""
-    return tk.Label(padre, text=pulir(texto), font=(F["texto"], tam), fg=color or "#484B43", bg=bg or padre["bg"],
-                    anchor="w", justify="left", wraplength=ancho)
-
-
-def regla(padre, grosor=1, color=None):
-    """Linea horizontal (filete editorial)."""
-    return tk.Frame(padre, height=grosor, bg=color or P["linea"])
-
-
-def seccion(padre, titulo, nota=""):
-    """Encabezado de seccion: titular condensado a la izquierda, nota en mono a la derecha."""
-    marco = tk.Frame(padre, bg=padre["bg"])
-    tk.Label(marco, text=titulo.upper(), font=(F["titulares"], 17, "bold"), fg=P["tinta"], bg=padre["bg"]).pack(side="left")
-    if nota:
-        tk.Label(marco, text=nota.upper(), font=(F["mono"], 7), fg=P["gris"], bg=padre["bg"]).pack(side="right", pady=(6, 0))
-    return marco
+def etiqueta_cambio(padre, contenido, tono="neutro"):
+    """Pildora de color con el cambio (▲ 3.2%)."""
+    fondo, color = TONOS[tono]
+    return tk.Label(padre, text=contenido, font=fuente(9, "bold"), bg=fondo, fg=color, padx=10, pady=3)
 
 
 # ---------- tooltip ----------
 
 class Tooltip:
-    """Explicacion al pasar el mouse por un widget."""
+    """Explicacion corta al pasar el mouse."""
 
-    def __init__(self, widget, texto_fn, ancho=420):
-        self.widget, self.texto_fn, self.ancho, self.ventana = widget, texto_fn, ancho, None
+    def __init__(self, widget, contenido, ancho=320):
+        self.widget, self.contenido, self.ancho, self.ventana = widget, contenido, ancho, None
         widget.bind("<Enter>", self.mostrar, add="+")
         widget.bind("<Leave>", self.ocultar, add="+")
 
     def mostrar(self, _evento=None):
-        texto = self.texto_fn() if callable(self.texto_fn) else self.texto_fn
-        if not texto or self.ventana:
+        contenido = self.contenido() if callable(self.contenido) else self.contenido
+        if not contenido or self.ventana:
             return
-        x = self.widget.winfo_rootx() + 12
+        x = self.widget.winfo_rootx() - 10
         y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
         self.ventana = tk.Toplevel(self.widget)
         self.ventana.wm_overrideredirect(True)
         self.ventana.wm_geometry(f"+{x}+{y}")
-        tk.Label(self.ventana, text=texto, justify="left", wraplength=self.ancho, bg=P["tinta"], fg=P["papel"],
-                 font=(F["texto"], 9), padx=10, pady=8).pack()
+        tk.Label(self.ventana, text=contenido, justify="left", wraplength=self.ancho, bg=P["marino"], fg="#FFFFFF",
+                 font=fuente(9), padx=12, pady=9).pack()
 
     def ocultar(self, _evento=None):
         if self.ventana:
@@ -97,16 +92,66 @@ class Tooltip:
             self.ventana = None
 
 
-# ---------- contenedor con scroll ----------
+def boton_info(padre, explicacion, bg=None):
+    """Boton redondo 'i': la explicacion aparece al pasar el mouse."""
+    b = tk.Label(padre, text="i", font=fuente(9, "bold"), fg=P["gris"], bg=bg or padre["bg"], width=2,
+                 highlightthickness=1, highlightbackground=P["linea"], cursor="question_arrow")
+    Tooltip(b, explicacion)
+    return b
+
+
+# ---------- botones ----------
+
+def boton(padre, contenido, accion, primario=True, ayuda=None):
+    """Boton plano: azul (primario) o blanco con borde (secundario)."""
+    fondo, color, hover = (P["azul"], "#FFFFFF", "#0F4F99") if primario else ("#FFFFFF", P["marino"], P["celeste"])
+    b = tk.Label(padre, text=contenido, font=fuente(10, "bold"), bg=fondo, fg=color, padx=16, pady=8, cursor="hand2",
+                 highlightthickness=0 if primario else 1, highlightbackground=P["linea"])
+    b.bind("<Button-1>", lambda e: accion())
+    b.bind("<Enter>", lambda e: b.configure(bg=hover))
+    b.bind("<Leave>", lambda e: b.configure(bg=fondo))
+    b.tono_base = fondo
+    if ayuda:
+        Tooltip(b, ayuda, ancho=260)
+    return b
+
+
+# ---------- contenedores ----------
+
+def tarjeta(padre, padx=22, pady=18):
+    """Tarjeta blanca con borde suave."""
+    return tk.Frame(padre, bg="#FFFFFF", padx=padx, pady=pady, highlightthickness=1, highlightbackground="#E3EAF2")
+
+
+def tarjeta_cifra(padre, etiqueta, valor, unidad="", cambio="", tono="neutro", explicacion="", detalle=""):
+    """Tarjeta de una cifra: nombre, numero grande, unidad y etiqueta de cambio."""
+    t = tarjeta(padre, 20, 16)
+    cabecera = tk.Frame(t, bg="#FFFFFF")
+    cabecera.pack(fill="x")
+    texto(cabecera, etiqueta, 10, P["gris"], "bold").pack(side="left")
+    if explicacion:
+        boton_info(cabecera, explicacion).pack(side="right")
+    fila = tk.Frame(t, bg="#FFFFFF")
+    fila.pack(fill="x", pady=(8, 6))
+    tk.Label(fila, text=valor, font=fuente(26, "xbold"), fg=P["marino"], bg="#FFFFFF").pack(side="left")
+    if unidad:
+        tk.Label(fila, text=unidad, font=fuente(10, "bold"), fg=P["gris"], bg="#FFFFFF").pack(side="left", padx=(6, 0),
+                                                                                             pady=(10, 0))
+    if cambio:
+        etiqueta_cambio(t, cambio, tono).pack(anchor="w")
+    if detalle:
+        texto(t, detalle, 9, P["gris"]).pack(anchor="w", pady=(4, 0))
+    return t
+
 
 class PanelScroll(tk.Frame):
-    """Marco con barra de desplazamiento vertical y rueda del mouse."""
+    """Marco con desplazamiento vertical y rueda del mouse."""
 
     def __init__(self, padre, **kw):
         super().__init__(padre, bg=P["papel"], **kw)
         self.lienzo = tk.Canvas(self, bg=P["papel"], highlightthickness=0, bd=0)
         barra = ttk.Scrollbar(self, orient="vertical", command=self.lienzo.yview)
-        self.interior = tk.Frame(self.lienzo, bg=P["papel"])
+        self.interior = tk.Frame(self.lienzo, bg=P["papel"], padx=36, pady=28)
         self.interior.bind("<Configure>", lambda e: self.lienzo.configure(scrollregion=self.lienzo.bbox("all")))
         self._ventana = self.lienzo.create_window((0, 0), window=self.interior, anchor="nw")
         self.lienzo.bind("<Configure>", lambda e: self.lienzo.itemconfigure(self._ventana, width=e.width))
@@ -114,7 +159,7 @@ class PanelScroll(tk.Frame):
         self.lienzo.pack(side="left", fill="both", expand=True)
         barra.pack(side="right", fill="y")
         self.bind_all("<MouseWheel>", self._rueda, add="+")
-        self.bind_all("<Button-4>", lambda e: self._mover(-1), add="+")   # Linux
+        self.bind_all("<Button-4>", lambda e: self._mover(-1), add="+")
         self.bind_all("<Button-5>", lambda e: self._mover(1), add="+")
 
     def _visible(self):
@@ -134,65 +179,39 @@ class PanelScroll(tk.Frame):
         self.lienzo.yview_moveto(0)
 
 
-# ---------- tarjetas ----------
+class MenuLateral(tk.Frame):
+    """Menu azul marino con las secciones; marca la activa."""
 
-def tarjeta_cifra(padre, etiqueta, valor, pie="", color_pie=None, ayuda=None, unidad=""):
-    """Celda de cifra: etiqueta mono, numero condensado grande y pie con la variacion."""
-    celda = tk.Frame(padre, bg=P["blanco"], padx=16, pady=12, highlightthickness=1, highlightbackground=P["linea"])
-    tk.Label(celda, text=etiqueta.upper(), font=(F["mono"], 8), fg=P["gris"], bg=P["blanco"], anchor="w").pack(fill="x")
-    fila = tk.Frame(celda, bg=P["blanco"])
-    fila.pack(fill="x", pady=(8, 2))
-    numero = tk.Label(fila, text=valor, font=(F["titulares"], 28, "bold"), fg=P["tinta"], bg=P["blanco"])
-    numero.pack(side="left")
-    if unidad:
-        tk.Label(fila, text=unidad, font=(F["mono"], 9), fg=P["gris"], bg=P["blanco"]).pack(side="left", padx=(5, 0), pady=(12, 0))
-    if pie:
-        tk.Label(celda, text=pie, font=(F["mono"], 8), fg=color_pie or P["gris"], bg=P["blanco"], anchor="w").pack(fill="x")
-    if ayuda:
-        for w in (celda, numero):
-            Tooltip(w, ayuda)
-    return celda
+    def __init__(self, padre, nombre, secciones, al_elegir):
+        super().__init__(padre, bg=P["marino"], width=236, padx=16, pady=24)
+        self.pack_propagate(False)
+        self.items, self.al_elegir, self.activa = {}, al_elegir, None
+        logo = tk.Frame(self, bg=P["marino"])
+        logo.pack(fill="x", pady=(0, 26))
+        tk.Label(logo, text="⚡", font=fuente(14, "bold"), bg=P["naranja"], fg=P["marino"], width=2).pack(side="left")
+        partes = nombre.split(" ", 1)
+        tk.Label(logo, text=" " + partes[0], font=fuente(15, "xbold"), bg=P["marino"], fg="#FFFFFF").pack(side="left")
+        if len(partes) > 1:
+            tk.Label(logo, text=" " + partes[1], font=fuente(15, "xbold"), bg=P["marino"], fg=P["azul_claro"]).pack(side="left")
+        for clave, etiqueta, icono in secciones:
+            item = tk.Label(self, text=f"  {icono}   {etiqueta}", font=fuente(11), bg=P["marino"], fg="#C9D8EA",
+                            anchor="w", padx=10, pady=10, cursor="hand2")
+            item.pack(fill="x", pady=1)
+            item.bind("<Button-1>", lambda e, c=clave: self.al_elegir(c))
+            item.bind("<Enter>", lambda e, w=item, c=clave: w.configure(bg="#16375A") if c != self.activa else None)
+            item.bind("<Leave>", lambda e, w=item, c=clave: w.configure(bg=P["marino"]) if c != self.activa else None)
+            self.items[clave] = item
+        pie = tk.Label(self, text="Datos públicos del COES.\nProyecto independiente.", font=fuente(8), bg="#16375A",
+                       fg="#C9D8EA", justify="left", anchor="w", padx=12, pady=10)
+        pie.pack(side="bottom", fill="x")
 
-
-def caja_oscura(padre):
-    """Bloque carbon para instrumentos (precio en vivo)."""
-    return tk.Frame(padre, bg=P["tinta"], padx=20, pady=18)
-
-
-def insignia(padre, texto, fondo=None, color=None):
-    """Etiqueta resaltada (lima sobre carbon por defecto)."""
-    return tk.Label(padre, text=texto, font=(F["mono"], 9, "bold"), bg=fondo or P["lima"], fg=color or P["tinta"],
-                    padx=8, pady=5)
-
-
-class QueSignifica(tk.Frame):
-    """'Que significa esto?' plegable con la explicacion en tres niveles."""
-
-    def __init__(self, padre, niveles: dict, titulo="¿Qué significa esto?", ancho=880):
-        super().__init__(padre, bg=P["papel"])
-        self.abierto = False
-        self.boton = tk.Label(self, text=f"+  {titulo}", font=(F["mono"], 9), fg=P["verde"], bg=P["papel"], cursor="hand2",
-                              anchor="w")
-        self.boton.pack(fill="x")
-        self.boton.bind("<Button-1>", self.alternar)
-        self.cuerpo = tk.Frame(self, bg=P["blanco"], padx=14, pady=10, highlightthickness=1, highlightbackground=P["linea"])
-        for etiqueta, clave in (("Lectura rápida", "rapida"), ("Con más detalle", "intermedia"), ("Nota técnica", "tecnica")):
-            texto = niveles.get(clave)
-            if not texto:
-                continue
-            tk.Label(self.cuerpo, text=etiqueta.upper(), font=(F["mono"], 7), fg=P["verde"], bg=P["blanco"], anchor="w").pack(fill="x", pady=(4, 0))
-            tk.Label(self.cuerpo, text=texto, font=(F["texto"], 10 if clave != "tecnica" else 9),
-                     fg=P["tinta"] if clave != "tecnica" else P["gris"], bg=P["blanco"], anchor="w", justify="left",
-                     wraplength=ancho).pack(fill="x")
-
-    def alternar(self, _evento=None):
-        self.abierto = not self.abierto
-        self.boton.configure(text=self.boton.cget("text").replace("+  " if self.abierto else "−  ",
-                                                                  "−  " if self.abierto else "+  ", 1))
-        if self.abierto:
-            self.cuerpo.pack(fill="x", pady=(4, 0))
-        else:
-            self.cuerpo.pack_forget()
+    def marcar(self, clave):
+        """Resalta la seccion activa."""
+        for c, item in self.items.items():
+            activo = c == clave
+            item.configure(bg=P["azul"] if activo else P["marino"], fg="#FFFFFF" if activo else "#C9D8EA",
+                           font=fuente(11, "bold") if activo else fuente(11))
+        self.activa = clave
 
 
 # ---------- graficos ----------
@@ -200,20 +219,19 @@ class QueSignifica(tk.Frame):
 class Grafico(tk.Frame):
     """Figura matplotlib embebida, con el valor al pasar el mouse (usa fig.hover)."""
 
-    def __init__(self, padre, fig, alto=None, borde=True):
-        super().__init__(padre, bg=P["blanco"], highlightthickness=1 if borde else 0,
-                         highlightbackground=P["linea"])
+    def __init__(self, padre, fig, alto=None):
+        super().__init__(padre, bg="#FFFFFF")
         self.fig = fig
         self.canvas = FigureCanvasTkAgg(fig, master=self)
         widget = self.canvas.get_tk_widget()
-        widget.configure(bg=padre["bg"], highlightthickness=0)
+        widget.configure(bg="#FFFFFF", highlightthickness=0)
         if alto:
             widget.configure(height=alto)
         widget.pack(fill="both", expand=True)
         self.ax = fig.axes[0]
-        self.nota = self.ax.annotate("", xy=(0, 0), xytext=(10, 10), textcoords="offset points", fontsize=8,
-                                     bbox={"boxstyle": "square,pad=0.5", "fc": P["tinta"], "ec": P["tinta"]},
-                                     color=P["papel"], zorder=10)
+        self.nota = self.ax.annotate("", xy=(0, 0), xytext=(10, 10), textcoords="offset points", fontsize=8.5,
+                                     bbox={"boxstyle": "round,pad=0.5", "fc": P["marino"], "ec": P["marino"]},
+                                     color="#FFFFFF", zorder=10)
         self.nota.set_visible(False)
         self.canvas.mpl_connect("motion_notify_event", self._mover)
         self.canvas.draw()
@@ -250,12 +268,11 @@ class Grafico(tk.Frame):
             return mdates.date2num(pd.Timestamp(x).to_pydatetime())
         return float(x)
 
-    def _mostrar(self, x, y, texto):
+    def _mostrar(self, x, y, contenido):
         self.nota.xy = (x, y)
-        self.nota.set_text(texto)
-        # Si el punto esta en la mitad derecha, el recuadro se abre hacia la izquierda
+        self.nota.set_text(contenido)
         x0, x1 = self.ax.get_xlim()
         derecha = (self._a_numero(x) - x0) / max(x1 - x0, 1e-9) > 0.6
-        self.nota.set_position((-120 if derecha else 10, 10))
+        self.nota.set_position((-130 if derecha else 10, 10))
         self.nota.set_visible(True)
         self.canvas.draw_idle()
