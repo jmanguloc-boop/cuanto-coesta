@@ -205,6 +205,24 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - Corregido al probar: los tests escribian en data/estado_fuentes.json real (ahora
   aislados con un fixture); textos con "m.." (se pule todo parrafo).
 
+### Mejoras v3: analisis gerencial (2026-10-12)
+Base: ANALISIS_GERENCIAL_2026-10-11.md (usuario objetivo: generadora; PC de la empresa; sin HTML ni .exe).
+- Fase 0: diagnostico de conexion solo con biblioteca estandar (DiagnosticoConexion.bat),
+  certificados de Windows con truststore, proxy manual opcional, AbrirCuantoCOESta.bat
+  (crea .venv sin admin, py -3 o python, wheels\ sin internet), requirements-app.txt
+  liviano, datos fuera de OneDrive automaticamente, ActivarActualizacionAutomatica.bat
+  (carpeta Inicio). Probado con una copia limpia: instalo y abrio la app.
+- Fase 1: serie continua (src/analysis/serie.py) con prioridad confirmado > preliminar >
+  en vivo; seccion Evolucion con rango libre, base/punta/fuera de punta, diario con banda,
+  mapa de calor, mensual, S/ o USD (BCRP) y Excel; relleno de huecos de hasta 7 dias al
+  abrir; Actualizar ahora y sello de frescura en el menu.
+- Fase 2: seccion Eventos (indisponibilidades, mantenimientos y eventos del Anexo A,
+  sin duplicados aun con tildes distintas); seccion Centrales (energia, potencia, precio
+  capturado, ingreso spot estimado, participacion por empresa); config/interno.yaml fuera de git.
+- Lo que viene: costo marginal programado del Programa Diario (US$/MWh, Santa Rosa,
+  Trujillo, Socabaya), programado vs real y "manana se espera" en Ahora.
+- Version visible (0.5.0). 73 tests en verde.
+
 ## Decisiones
 
 - **Carpeta del proyecto**: se mantiene en `Desktop/pulso-electrico-peru` en lugar
@@ -266,6 +284,14 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
 - **SQLite** para Ahora: viene con Python y permite versionar cada observacion.
 - **Rarezas por rango** en vez de mediana+MAD (ver Mejoras v2).
 
+- **Diagnostico con biblioteca estandar**: corre antes de instalar nada; prueba con los
+  certificados de Windows y con los de certifi para saber si hace falta truststore.
+- **Serie continua sin migrar datos**: en vez de una base nueva, se leen los parquet
+  semanales con filtro por barra (0.7 s para 70 dias); las semanas pasan a ser un filtro.
+- **Punta 18:00 a 23:00** y ano hidrologico noviembre a octubre, en config/analisis.yaml.
+- **Ingreso spot estimado** con la barra de referencia hasta que el usuario configure la
+  barra de cada central; la app lo marca como aproximado.
+
 ## Pendientes
 
 - Eventos, mantenimientos e indisponibilidades (ya vienen en el Anexo A) para una version futura.
@@ -285,3 +311,7 @@ Reconocimiento inicial y descargadores de demanda, generacion y costo marginal
   hasta la proxima descarga semanal (el registro se agrego en v2).
 - Mapa: 13 barras del mapa publico no cruzan por nombre con el IEOD; se podria mapear a mano.
 - La consulta cada 30 min con la app cerrada requiere programarla (README: Programador de tareas o cron).
+- Analisis gerencial pendiente: hidrologia vs promedio historico, tecnologia marginal,
+  precio en barra Osinergmin, alertas, historico de 3 anos, margen de termicas,
+  programado vs ejecutado por central, modo analista, guia de usuario, prueba diaria.
+- Requiere al usuario: diagnostico en la laptop, centrales y barras propias, umbrales, reporte de produccion.
