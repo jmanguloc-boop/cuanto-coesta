@@ -13,3 +13,4 @@ data/estado_fuentes.json
 data/ahora/
 diagnostico_conexion.txt
 wheels/
+data/tipo_cambio.csv
