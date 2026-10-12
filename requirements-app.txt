@@ -1,0 +1,10 @@
+# Librerias minimas para la app de escritorio (PC de la empresa).
+# requirements.txt trae ademas el dashboard web y las herramientas de prueba.
+requests==2.34.2
+pandas==3.0.6
+openpyxl==3.1.5
+PyYAML==6.0.3
+pyarrow==25.0.1
+matplotlib==3.11.2
+fpdf2==2.8.9
+truststore==0.10.4

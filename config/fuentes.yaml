@@ -18,6 +18,12 @@ cliente:
   # si la copia en cache tiene mas de horas_vigencia_reciente horas
   dias_provisionales: 3
   horas_vigencia_reciente: 6
+  # Red corporativa: el proxy de Windows se usa solo. Si TI da uno distinto,
+  # ponerlo aqui, por ejemplo "http://proxy.empresa.com:8080". Vacio = automatico.
+  proxy: ""
+  # true = confiar en los certificados instalados en Windows (necesario si la red
+  # inspecciona el trafico SSL; sin esto las descargas fallan con error de certificado)
+  certificados_sistema: true
 
 portal: "https://www.coes.org.pe/Portal"
 

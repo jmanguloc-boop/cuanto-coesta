@@ -17,6 +17,43 @@ class NoPublicado(Exception):
     """El COES todavia no publico el archivo pedido."""
 
 
+_CERTIFICADOS_SISTEMA = None
+
+
+def usar_certificados_del_sistema():
+    """En redes corporativas con inspeccion SSL, usa los certificados de Windows/macOS (truststore).
+
+    Devuelve True si se activo. Se hace una sola vez por proceso.
+    """
+    global _CERTIFICADOS_SISTEMA
+    if _CERTIFICADOS_SISTEMA is None:
+        try:
+            import truststore
+            truststore.inject_into_ssl()
+            _CERTIFICADOS_SISTEMA = True
+        except Exception as error:   # sin truststore se usan los certificados de certifi
+            log.debug("truststore no disponible: %s", error)
+            _CERTIFICADOS_SISTEMA = False
+    return _CERTIFICADOS_SISTEMA
+
+
+def crear_sesion(cfg=None):
+    """Sesion HTTP lista para redes corporativas.
+
+    - Proxy del sistema: requests lo lee solo (en Windows, de la configuracion de Internet)
+    - Proxy manual: cliente.proxy en config/fuentes.yaml, si TI lo pide
+    - Certificados: los del sistema operativo si cliente.certificados_sistema es true
+    """
+    cfg = cfg or config.fuentes()["cliente"]
+    if cfg.get("certificados_sistema", True):
+        usar_certificados_del_sistema()
+    sesion = requests.Session()
+    proxy = cfg.get("proxy")
+    if proxy:
+        sesion.proxies.update({"http": proxy, "https": proxy})
+    return sesion
+
+
 class ClienteCoes:
     """Hace pedidos al portal COES sin saturarlo.
 
@@ -29,7 +66,9 @@ class ClienteCoes:
         fuentes = config.fuentes()
         self.cfg = cfg_cliente or fuentes["cliente"]
         self.portal = portal or fuentes["portal"]
-        self.sesion = sesion or requests.Session()
+        if sesion is None:
+            sesion = crear_sesion(self.cfg)
+        self.sesion = sesion
         self.sesion.headers["User-Agent"] = self.cfg["user_agent"]
         self.dormir = dormir
         self.ahora = ahora

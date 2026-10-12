@@ -88,6 +88,10 @@ def empaquetar(raiz=None):
             z.write(raiz / archivo, f"{carpeta}/{archivo}")
         if pdf:
             z.write(pdf, f"{carpeta}/reports/{pdf.name}")
+        # Librerias para instalar sin internet (si se prepararon con:
+        # python -m pip download -r requirements-app.txt -d wheels, en una PC con la misma version de Python)
+        for rueda in sorted((raiz / "wheels").glob("*.whl")):
+            z.write(rueda, f"{carpeta}/wheels/{rueda.name}")
         texto = COMO_CORRERLO.format(nombre=proyecto["nombre"], tagline=proyecto["tagline"],
                                      aviso=" ".join(proyecto["aviso"].split()))
         z.writestr(f"{carpeta}/COMO_CORRERLO.txt", texto)

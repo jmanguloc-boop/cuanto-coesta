@@ -3,3 +3,4 @@
 *.pdf binary
 *.xlsx binary
 *.parquet binary
+*.bat text eol=crlf
