@@ -195,13 +195,15 @@ class MenuLateral(tk.Frame):
             tk.Label(logo, text=" " + partes[1], font=fuente(15, "xbold"), bg=P["marino"], fg=P["azul_claro"]).pack(side="left")
         for clave, etiqueta, icono in secciones:
             item = tk.Label(self, text=f"  {icono}   {etiqueta}", font=fuente(11), bg=P["marino"], fg="#C9D8EA",
-                            anchor="w", padx=10, pady=10, cursor="hand2")
+                            anchor="w", padx=10, pady=7, cursor="hand2")
             item.pack(fill="x", pady=1)
             item.bind("<Button-1>", lambda e, c=clave: self.al_elegir(c))
             item.bind("<Enter>", lambda e, w=item, c=clave: w.configure(bg="#16375A") if c != self.activa else None)
             item.bind("<Leave>", lambda e, w=item, c=clave: w.configure(bg=P["marino"]) if c != self.activa else None)
             self.items[clave] = item
-        pie = tk.Label(self, text="Datos públicos del COES.\nProyecto independiente.", font=fuente(8), bg="#16375A",
+        from src.utils import config
+        version = config.proyecto().get("version", "")
+        pie = tk.Label(self, text=f"Datos públicos del COES.\nProyecto independiente · v{version}", font=fuente(8), bg="#16375A",
                        fg="#C9D8EA", justify="left", anchor="w", padx=12, pady=10)
         pie.pack(side="bottom", fill="x")
 
