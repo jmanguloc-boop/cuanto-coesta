@@ -58,6 +58,16 @@ Las tipografías (Barlow, Barlow Condensed e IBM Plex Mono, licencia OFL) vienen
 - **Sin inventar causas.** Los textos se arman con reglas fijas, sin inteligencia
   artificial, y solo relacionan dos hechos cuando los datos lo respaldan.
 
+## En la PC de la empresa (doble clic, sin .exe ni administrador)
+
+1. `DiagnosticoConexion.bat`: prueba si la PC llega al COES, al BCRP y a PyPI (no instala nada) y deja `diagnostico_conexion.txt`.
+2. `AbrirCuantoCOESta.bat`: la primera vez prepara todo (unos minutos); después abre la app al instante.
+3. Opcional: `ActivarActualizacionAutomatica.bat` consulta el precio cada 30 minutos al prender la PC.
+
+Usa el proxy y los certificados de Windows; si TI da un proxy distinto, va en `config/fuentes.yaml`.
+Tus centrales y barras van en `config/interno.yaml` (copia de `interno.ejemplo.yaml`), que nunca se sube a GitHub.
+Descripción completa en [`DESCRIPCION_DEL_PROYECTO.md`](DESCRIPCION_DEL_PROYECTO.md).
+
 ## Cómo correrlo (3 comandos)
 
 Requiere Python 3.11 o más nuevo.
