@@ -27,7 +27,7 @@ def test_app_escritorio_carga_todas_las_pestanas():
         time.sleep(0.05)
     try:
         assert app.r is not None, "la semana no termino de cargar"
-        assert len(app.paneles) == len(escritorio.SECCIONES) == 10
+        assert len(app.paneles) == len(escritorio.SECCIONES) == 12
         for clave, panel in app.paneles.items():
             assert panel.interior.winfo_children(), f"pestana vacia: {clave}"
     finally:

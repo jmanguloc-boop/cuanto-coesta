@@ -26,7 +26,7 @@ def test_fin_de_intervalo_2359_es_medianoche():
 
 def test_se_generan_las_cinco_tablas(processed_muestra):
     _, filas, avisos = processed_muestra
-    assert set(filas) == {"demanda", "generacion", "costo_marginal", "cmg_preliminar", "embalses", "centrales"}
+    assert set(filas) == {"demanda", "generacion", "costo_marginal", "cmg_preliminar", "embalses", "centrales", "eventos"}
     assert any("1 de 7 dias" in a for a in avisos)  # la muestra es de un solo dia
 
 

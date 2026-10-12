@@ -1,0 +1,19 @@
+# Copia este archivo como config/interno.yaml y completalo.
+# config/interno.yaml NUNCA se sube a GitHub (esta en .gitignore): aqui va lo propio de la empresa.
+
+# Centrales que quieres seguir, con el nombre tal como aparece en la seccion "Centrales"
+# de la app (columna Central). Se muestran primero y con su ingreso spot estimado.
+mis_centrales: []
+#  - "HUINCO"
+#  - "CHIMAY"
+
+# Barra donde inyecta cada central, para calcular su precio e ingreso con el costo
+# marginal correcto. Sin esto se usa la barra de referencia (Santa Rosa 220) y la app lo avisa.
+barras_de_centrales: {}
+#  HUINCO: "SANTA ROSA 220"
+#  CHIMAY: "CHIMAY 220"
+
+# Barras favoritas para la seccion Evolucion (aparecen primero en la lista)
+barras_favoritas: []
+#  - "SANTA ROSA 220"
+#  - "SOCABAYA 220"

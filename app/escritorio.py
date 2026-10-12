@@ -25,9 +25,9 @@ from src.ahora.memoria import estado_precio  # noqa: E402
 from src.analysis import calcular_resumen  # noqa: E402
 from src.narrative import generar_narrativa  # noqa: E402
 from src.utils import config, estado  # noqa: E402
-from src.utils.datos import ruta_tabla, semanas_disponibles  # noqa: E402
+from src.utils.datos import leer_tabla, ruta_tabla, semanas_disponibles  # noqa: E402
 from src.utils.estilo import familias_tk, registrar_fuentes_tk  # noqa: E402
-from src.analysis import serie  # noqa: E402
+from src.analysis import centrales, serie  # noqa: E402
 from src.utils.fechas import dia_y_hora, hoy_peru, texto_semana, ultima_semana_completa  # noqa: E402
 from src.utils.formato import numero, porcentaje  # noqa: E402
 from src.utils.logs import configurar_logging, obtener_logger  # noqa: E402
@@ -41,7 +41,7 @@ GLOSARIO = config.glosario()
 SECCIONES = [
     ("resumen", "Resumen", "▦"), ("ahora", "Ahora", "◷"), ("evolucion", "Evolución", "≋"), ("precios", "Precios", "↗"),
     ("demanda", "Demanda", "∿"), ("generacion", "Generación", "☀"), ("embalses", "Embalses", "◍"),
-    ("mapa", "Mapa", "⌖"), ("fuentes", "Fuentes", "≡"), ("glosario", "Glosario", "?"),
+    ("eventos", "Eventos", "⚠"), ("centrales", "Centrales", "⌁"), ("mapa", "Mapa", "⌖"), ("fuentes", "Fuentes", "≡"), ("glosario", "Glosario", "?"),
 ]
 
 
@@ -240,7 +240,8 @@ class App:
     def _mostrar_semana(self, resultado):
         self.r, self.n = resultado
         for vista in (self.vista_resumen, self.vista_precios, self.vista_demanda, self.vista_generacion,
-                      self.vista_embalses, self.vista_mapa, self.vista_fuentes, self.vista_glosario):
+                      self.vista_embalses, self.vista_eventos, self.vista_centrales, self.vista_mapa,
+                      self.vista_fuentes, self.vista_glosario):
             vista()
         if self.ev_datos is None:
             self.cargar_evolucion()
@@ -707,6 +708,131 @@ class App:
         aviso = tk.Frame(fila, bg=P["celeste"], padx=18, pady=16)
         aviso.grid(row=0, column=1, sticky="nsew")
         ui.texto(aviso, " ".join(PROYECTO["aviso"].split()), 10, bg=P["celeste"], ancho=420).pack(anchor="w")
+
+    # ----- eventos -----
+
+    def vista_eventos(self):
+        r = self.r
+        panel = self.paneles["eventos"]
+        panel.limpiar()
+        c = panel.interior
+        self._cabecera(c, "Eventos", f"Salidas de servicio, mantenimientos y fallas · {rango_corto(r.semana)}")
+        ev = centrales.eventos_semana(r.semana)
+        if ev.empty:
+            ui.texto(c, "No hay eventos registrados para esta semana.", 12).pack(anchor="w")
+            return
+        gen = ev[(ev["clase"] == "G") & (ev["mw"] > 0)]
+        forzadas = gen[~gen["programado"]]
+        dia = centrales.indisponible_por_dia(ev, r.desde, r.hasta)
+        maximo = (dia["programado"] + dia["forzado"]).max() if len(dia) else 0
+        self._cifras(c, [
+            dict(etiqueta="Salidas forzadas", valor=str(len(forzadas)), unidad="de generación",
+                 cambio=f"{forzadas['mw'].sum():,.0f} MW en total" if len(forzadas) else "ninguna",
+                 tono="alerta" if len(forzadas) else "bueno",
+                 explicacion="Centrales o unidades que salieron de servicio sin estar programado (fallas, emergencias)."),
+            dict(etiqueta="Mantenimientos programados", valor=str(int(gen["programado"].sum())), unidad="de generación",
+                 explicacion="Salidas avisadas con anticipación al COES."),
+            dict(etiqueta="Máximo fuera de servicio", valor=numero(maximo), unidad="MW en un día",
+                 explicacion="Suma de la potencia de las unidades de generación que estuvieron fuera ese día."),
+            dict(etiqueta="Eventos en la red", valor=str(int((ev["origen"] == "evento").sum())),
+                 unidad="desconexiones", explicacion="Desconexiones de líneas, transformadores o generadores reportadas."),
+        ])
+        self._tarjeta_grafico(c, "Generación fuera de servicio por día", G.indisponibilidad(dia), "MW",
+                              alto=240).pack(fill="x", pady=(0, 16))
+        lista = ui.tarjeta(c)
+        lista.pack(fill="x", pady=(0, 16))
+        ui.texto(lista, "Las salidas más grandes de la semana", 13, peso="bold").pack(anchor="w", pady=(0, 4))
+        ui.texto(lista, "El precio es el promedio en Santa Rosa mientras duró la salida: muestra coincidencia, no causa.",
+                 9, P["gris"], bg="#FFFFFF").pack(anchor="w", pady=(0, 10))
+        cmg = r.serie_cmg.rename(columns={"valor": "total"})
+        tabla = tk.Frame(lista, bg="#FFFFFF")
+        tabla.pack(fill="x")
+        for j, peso in enumerate((4, 3, 3, 2, 2, 2)):
+            tabla.columnconfigure(j, weight=peso)
+        for j, cab in enumerate(("Central / unidad", "Empresa", "Desde → hasta", "MW", "Tipo", "Precio mientras")):
+            ui.texto(tabla, cab, 9, P["gris"], "bold", bg="#FFFFFF").grid(row=0, column=j, sticky="w", pady=(0, 6))
+        for i, (_, f) in enumerate(gen.sort_values("mw", ascending=False).head(12).iterrows(), start=1):
+            nombre = f["ubicacion"].title() + ("" if f["equipo"] in ("CENTRAL", "") else f" · {f['equipo']}")
+            ui.texto(tabla, nombre, 10, peso="bold", bg="#FFFFFF").grid(row=i, column=0, sticky="w", pady=4)
+            ui.texto(tabla, str(f["empresa"]).title()[:28], 9, bg="#FFFFFF").grid(row=i, column=1, sticky="w")
+            ui.texto(tabla, f"{f['inicio']:%d/%m %H:%M} → {f['final']:%d/%m %H:%M}", 9, bg="#FFFFFF").grid(
+                row=i, column=2, sticky="w")
+            ui.texto(tabla, f"{f['mw']:,.0f}", 10, peso="bold", bg="#FFFFFF").grid(row=i, column=3, sticky="w")
+            ui.etiqueta_cambio(tabla, "Programada" if f["programado"] else "Forzada",
+                               "neutro" if f["programado"] else "malo").grid(row=i, column=4, sticky="w")
+            precio = centrales.precio_durante(cmg, f["inicio"], f["final"])
+            ui.texto(tabla, soles(precio) if precio else "s/d", 9, bg="#FFFFFF").grid(row=i, column=5, sticky="w")
+        red = ev[ev["origen"] == "evento"].sort_values("inicio", ascending=False).head(8)
+        if len(red):
+            t = ui.tarjeta(c)
+            t.pack(fill="x")
+            ui.texto(t, "Últimos eventos en la red", 13, peso="bold").pack(anchor="w", pady=(0, 8))
+            for _, f in red.iterrows():
+                linea = tk.Frame(t, bg="#FFFFFF")
+                linea.pack(fill="x", pady=3)
+                ui.texto(linea, f"{f['inicio']:%d/%m %H:%M}", 9, P["gris"], "bold", bg="#FFFFFF").pack(side="left")
+                ui.texto(linea, f"  {str(f['ubicacion']).title()} · {f['equipo']}: {str(f['descripcion'])[:90].capitalize()}",
+                         9, bg="#FFFFFF").pack(side="left")
+
+    # ----- centrales -----
+
+    def vista_centrales(self, central=None):
+        r = self.r
+        panel = self.paneles["centrales"]
+        panel.limpiar()
+        c = panel.interior
+        self._cabecera(c, "Centrales y empresas", f"Generación por central · {rango_corto(r.semana)}")
+        cen = leer_tabla("centrales", r.semana)
+        if cen.empty:
+            ui.texto(c, "No hay datos por central para esta semana.", 12).pack(anchor="w")
+            return
+        nombres = centrales.lista_centrales(cen)
+        central = central or (nombres[0] if config.interno().get("mis_centrales") else
+                              centrales.top_centrales(cen, 1)["central"].iloc[0])
+        # Selector y detalle de una central
+        sel = ui.tarjeta(c, 18, 12)
+        sel.pack(fill="x", pady=(0, 16))
+        ui.texto(sel, "Central", 9, P["gris"], "bold", bg="#FFFFFF").pack(side="left")
+        combo = ttk.Combobox(sel, state="readonly", width=34, values=nombres, font=ui.fuente(10))
+        combo.set(central)
+        combo.bind("<<ComboboxSelected>>", lambda e: self.vista_centrales(combo.get()))
+        combo.pack(side="left", padx=(8, 16))
+        if not config.interno().get("mis_centrales"):
+            ui.texto(sel, "Tip: pon tus centrales en config/interno.yaml para verlas primero.", 9, P["gris"],
+                     bg="#FFFFFF").pack(side="left")
+        barra, aproximada = centrales.barra_de(central)
+        cmg = serie.cmg_rango(r.desde, r.hasta, barra)
+        d = centrales.detalle_central(cen, central, cmg)
+        if d:
+            vs = ""
+            if d["precio_capturado"] and d["precio_promedio"]:
+                dif = d["precio_capturado"] / d["precio_promedio"] - 1
+                vs = f"{abs(dif) * 100:.0f}% {'sobre' if dif > 0 else 'bajo'} el promedio"
+            self._cifras(c, [
+                dict(etiqueta="Energía de la semana", valor=numero(d["energia_mwh"]), unidad="MWh",
+                     detalle=f"{d['empresa'].title()} · {config.nombre_tecnologia(d['tecnologia'])}"),
+                dict(etiqueta="Potencia máxima", valor=numero(d["mw_max"]), unidad="MW",
+                     detalle=f"generó {d['horas_generando']:,.0f} de 168 horas"),
+                dict(etiqueta="Precio capturado", valor=soles(d["precio_capturado"]), unidad="por MWh", cambio=vs,
+                     explicacion="Precio promedio ponderado por lo que generó la central en cada media hora."),
+                dict(etiqueta="Ingreso spot estimado", valor=f"S/ {numero((d['ingreso_estimado'] or 0) / 1e6, 2)} M",
+                     cambio=f"con precio de {barra.title()}" + (" (aproximado)" if aproximada else ""),
+                     tono="info" if not aproximada else "neutro",
+                     explicacion="Generación por costo marginal, media hora a media hora. Es una estimación: no incluye "
+                                 "potencia, contratos ni retiros; no es la valorización oficial del COES."),
+            ])
+            self._tarjeta_grafico(c, f"{central.title()}: generación de la semana", G.generacion_central(d["serie"]),
+                                  "MW", alto=230).pack(fill="x", pady=(0, 16))
+        fila = self._fila(c, [1, 1])
+        emp = centrales.participacion_empresas(cen, leer_tabla("centrales", r.semana_anterior))
+        self._tarjeta_grafico(fila, "Participación por empresa",
+                              G.barras_horizontales(emp["empresa"].tolist(), emp["cuota"].tolist(),
+                                                    emp["cuota_anterior"].tolist()), "% de la energía").grid(
+            row=0, column=0, sticky="nsew", padx=(0, 14))
+        top = centrales.top_centrales(cen, 10)
+        self._tarjeta_grafico(fila, "Centrales con más energía",
+                              G.barras_horizontales(top["central"].tolist(), (top["energia_mwh"] / 1000).tolist(),
+                                                    formato="{:,.1f} GWh"), "GWh").grid(row=0, column=1, sticky="nsew")
 
     # ----- evolucion (rango libre) -----
 

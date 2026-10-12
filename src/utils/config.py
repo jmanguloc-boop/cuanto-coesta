@@ -56,6 +56,15 @@ def glosario():
     return cargar_yaml("glosario")
 
 
+def interno():
+    """config/interno.yaml (datos propios de la empresa, fuera de git) o un dict vacio."""
+    ruta = DIR_CONFIG / "interno.yaml"
+    if not ruta.exists():
+        return {}
+    with open(ruta, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
 def color_tecnologia(clave):
     """Color fijo de una tecnologia."""
     techs = proyecto()["tecnologias"]

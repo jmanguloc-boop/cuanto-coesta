@@ -248,3 +248,80 @@ def tabla_centrales(desde, hasta, raiz=None):
     df = pd.concat(partes).groupby(
         ["fecha_hora", "entidad", "empresa", "area", "tecnologia", "variable"], as_index=False)["valor"].sum()
     return recortar(armar(df, "MW", "ieod_despacho"), desde, hasta)
+
+
+# ---------- eventos, mantenimientos e indisponibilidades (IEOD Anexo A) ----------
+
+HOJAS_EVENTOS = {"INDISP": "indisponibilidad", "MANTENIMIENTO EJECUTADOS": "mantenimiento", "EVENTOS": "evento"}
+PRIORIDAD_ORIGEN = {"indisponibilidad": 0, "mantenimiento": 1, "evento": 2}
+
+
+def _sin_tildes(texto):
+    import unicodedata
+    return unicodedata.normalize("NFKD", str(texto)).encode("ascii", "ignore").decode().upper().strip()
+
+
+def _leer_hoja_eventos(ruta, hoja, origen):
+    crudo = pd.read_excel(ruta, sheet_name=hoja, header=None)
+    marca = "TIPO DE EVENTO" if origen == "evento" else "Empresa"
+    filas_cab = crudo.index[crudo.iloc[:, 1].astype(str).str.strip() == marca]
+    if not len(filas_cab):
+        return pd.DataFrame()
+    cab = [limpiar_texto(c) if isinstance(c, str) else c for c in crudo.iloc[filas_cab[0]].tolist()]
+    datos = crudo.iloc[filas_cab[0] + 1:].copy()
+    datos.columns = cab
+    datos = datos.dropna(subset=[c for c in cab if isinstance(c, str) and c.upper().startswith("INICIO")])
+    claves = {clave_ascii(c): c for c in cab if isinstance(c, str)}
+
+    def col(*nombres):
+        for n in nombres:
+            if n in claves:
+                return datos[claves[n]]
+        return pd.Series([None] * len(datos), index=datos.index)
+
+    salida = pd.DataFrame({
+        "origen": origen,
+        "empresa": col("EMPRESA").map(lambda v: limpiar_texto(v) if isinstance(v, str) else v),
+        "ubicacion": col("UBICACIN").map(lambda v: limpiar_texto(v) if isinstance(v, str) else v),
+        "equipo": col("EQUIPO").map(lambda v: limpiar_texto(str(v)) if v == v and v is not None else ""),
+        "inicio": pd.to_datetime(col("INICIO"), dayfirst=True, errors="coerce"),
+        "final": pd.to_datetime(col("FINAL"), dayfirst=True, errors="coerce"),
+        "descripcion": col("DESCRIPCIN").map(lambda v: limpiar_texto(v) if isinstance(v, str) else ""),
+        "mw": pd.to_numeric(col("MWINDISP"), errors="coerce"),
+        "programado": col("PROG").astype(str).str.strip().eq("P") if origen != "evento" else False,
+        "tipo": col("TIPO", "TIPODEEVENTO").astype(str).str.strip().str.rstrip("."),
+        "clase": col("TIPOEQOSINERG").astype(str).str.strip() if origen != "evento" else
+        col("TIPODEEQUIPO").map(lambda v: "G" if isinstance(v, str) and "GENERADOR" in v.upper() else "T"),
+    })
+    return salida.dropna(subset=["inicio"])
+
+
+def leer_eventos(ruta):
+    """Indisponibilidades, mantenimientos ejecutados y eventos de un dia del IEOD."""
+    hojas = pd.ExcelFile(ruta).sheet_names
+    partes = [_leer_hoja_eventos(ruta, h, o) for h, o in HOJAS_EVENTOS.items() if h in hojas]
+    partes = [p for p in partes if not p.empty]
+    return pd.concat(partes, ignore_index=True) if partes else pd.DataFrame()
+
+
+def tabla_eventos(desde, hasta, raiz=None):
+    """Lista de la semana sin duplicados: un mantenimiento de varios dias queda en una sola fila."""
+    partes = [leer_eventos(r) for r in archivos_del_rango("ieod_anexo", desde, hasta, raiz)]
+    partes = [p for p in partes if not p.empty]
+    if not partes:
+        return pd.DataFrame()
+    df = pd.concat(partes, ignore_index=True)
+    df["prioridad"] = df["origen"].map(PRIORIDAD_ORIGEN)
+    # La misma salida aparece en varias hojas, a veces con y sin tildes: se compara sin ellas
+    for col in ("empresa", "ubicacion", "equipo"):
+        df[col + "_clave"] = df[col].fillna("").map(_sin_tildes)
+    df = df.sort_values("prioridad").drop_duplicates(["empresa_clave", "ubicacion_clave", "equipo_clave", "inicio"],
+                                                     keep="first")
+    df = df.drop(columns=["empresa_clave", "ubicacion_clave", "equipo_clave"])
+    clave = ["origen", "empresa", "ubicacion", "equipo", "descripcion", "programado", "tipo", "clase"]
+    df[clave] = df[clave].fillna("")
+    agrupado = df.groupby(clave, as_index=False).agg(inicio=("inicio", "min"), final=("final", "max"),
+                                                     mw=("mw", "max"), dias=("inicio", "count"))
+    agrupado["fecha"] = (agrupado["inicio"]).dt.date
+    agrupado = agrupado[(agrupado["final"].dt.date >= desde) & (agrupado["inicio"].dt.date <= hasta)]
+    return agrupado.sort_values(["mw", "inicio"], ascending=[False, True]).reset_index(drop=True)

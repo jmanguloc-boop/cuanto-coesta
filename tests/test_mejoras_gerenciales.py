@@ -97,3 +97,29 @@ def test_diagnostico_explica_errores():
     from src.utils.diagnostico import _explicar
     assert "certificado" in _explicar(Exception("CERTIFICATE_VERIFY_FAILED")).lower()
     assert "proxy" in _explicar(Exception("407 Proxy Authentication Required")).lower()
+
+
+def test_eventos_del_ieod(processed_muestra):
+    from src.analysis import centrales as C
+    raiz, filas, _ = processed_muestra
+    assert filas.get("eventos", 0) > 0
+    ev = C.eventos_semana("2026-W40", raiz)
+    assert {"origen", "empresa", "inicio", "final", "mw", "programado", "clase"} <= set(ev.columns)
+    assert set(ev["origen"]) <= {"indisponibilidad", "mantenimiento", "evento"}
+    dia = C.indisponible_por_dia(ev, date(2026, 9, 28), date(2026, 10, 4))
+    assert len(dia) == 7 and dia.loc[3, "programado"] + dia.loc[3, "forzado"] > 0   # el 01/10 es el dia con datos
+
+
+def test_centrales_y_empresas(processed_muestra):
+    from src.analysis import centrales as C
+    from src.utils.datos import leer_tabla
+    raiz, _, _ = processed_muestra
+    cen = leer_tabla("centrales", "2026-W40", raiz)
+    emp = C.participacion_empresas(cen)
+    assert emp["cuota"].sum() <= 1.0001 and len(emp) == 10
+    top = C.top_centrales(cen, 3)
+    cmg = pd.DataFrame({"fecha_hora": cen["fecha_hora"].unique()})
+    cmg["total"] = 100.0
+    d = C.detalle_central(cen, top["central"].iloc[0], cmg)
+    assert d["precio_capturado"] == pytest.approx(100.0)                       # precio plano: capturado = precio
+    assert d["ingreso_estimado"] == pytest.approx(d["energia_mwh"] * 100.0, rel=1e-6)

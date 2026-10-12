@@ -48,6 +48,16 @@ def transformar_semana(semana, raiz_raw=None, raiz_processed=None):
         df.to_parquet(destino, index=False)
         filas[tabla] = len(df)
         log.info("%s: %s filas -> %s", tabla, len(df), destino.name)
+    try:
+        eventos = tablas.tabla_eventos(desde, hasta, raiz_raw)
+        if not eventos.empty:
+            destino = ruta_tabla("eventos", semana, raiz_processed)
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            eventos.to_parquet(destino, index=False)
+            filas["eventos"] = len(eventos)
+    except Exception as error:   # los eventos son un extra: no frenan la semana
+        log.error("No se pudo armar eventos: %s", error)
+        avisos.append(f"eventos: error al transformar ({error})")
     ruta_avisos = Path(raiz_processed or config.DIR_PROCESSED) / "avisos" / f"avisos_{semana}.json"
     ruta_avisos.parent.mkdir(parents=True, exist_ok=True)
     ruta_avisos.write_text(json.dumps(avisos, ensure_ascii=False, indent=2), encoding="utf-8")

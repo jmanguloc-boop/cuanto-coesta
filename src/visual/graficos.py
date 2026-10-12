@@ -414,3 +414,65 @@ def mensual_barras(mes, unidad="S/", titulo="", kicker=""):
     fig.hover.append((list(x), list(mes["promedio"]),
                       lambda i, v: f"{etiquetas[int(round(i))]}\nPromedio: {unidad} {v:,.1f} por MWh"))
     return fig
+
+
+# ---------- generadora: empresas, centrales e indisponibilidad ----------
+
+def barras_horizontales(nombres, valores, anteriores=None, formato="{:.1%}", titulo="", kicker=""):
+    """Ranking horizontal (azul) con la marca de la semana anterior si se da."""
+    p = paleta()
+    alto = max(2.2, 0.32 * len(nombres) + 0.8)
+    fig, ax = _fig(alto=alto)
+    y = np.arange(len(nombres))[::-1]
+    ax.barh(y, valores, height=0.55, color=p["azul"])
+    if anteriores is not None and any(v is not None and v == v for v in anteriores):
+        ax.scatter([v if v == v else 0 for v in anteriores], y, marker="|", s=170, color=p["naranja"], zorder=3,
+                   label="Semana anterior")
+        _leyenda(ax)
+    tope = max(valores) if len(valores) else 1
+    for yi, v in zip(y, valores, strict=True):
+        ax.text(v + tope * 0.01, yi, formato.format(v), va="center", fontsize=8.5, color=p["tinta"],
+                **fuente_mpl("texto", weight="bold"))
+    ax.set_yticks(y)
+    ax.set_yticklabels([n.title()[:34] for n in nombres], fontsize=8.5)
+    ax.set_xlim(0, tope * 1.15)
+    ax.set_xticks([])
+    ax.grid(False)
+    ax.spines["bottom"].set_visible(False)
+    _encabezado(fig, ax, titulo, kicker)
+    fig.subplots_adjust(left=0.3)
+    return fig
+
+
+def generacion_central(serie, titulo="", kicker=""):
+    """MW de una central cada media hora."""
+    p = paleta()
+    fig, ax = _fig(alto=2.6)
+    x, y = serie["fecha_hora"], serie["valor"].clip(lower=0)
+    ax.fill_between(x, y, color=p["celeste"], linewidth=0)
+    ax.plot(x, y, color=p["azul"], linewidth=1.6)
+    _eje_dias(ax, x)
+    ax.yaxis.set_major_formatter(MILES)
+    _encabezado(fig, ax, titulo, kicker)
+    fig.hover.append((list(x), list(y), _fmt_mw))
+    return fig
+
+
+def indisponibilidad(dia, titulo="", kicker=""):
+    """MW de generacion fuera de servicio por dia: programado (gris azulado) y forzado (naranja)."""
+    p = paleta()
+    fig, ax = _fig(alto=2.5)
+    if dia.empty:
+        return fig
+    x = np.arange(len(dia))
+    ax.bar(x, dia["programado"], color=AYER, width=0.6, label="Programado")
+    ax.bar(x, dia["forzado"], bottom=dia["programado"], color=p["naranja"], width=0.6, label="Forzado")
+    etiquetas = [f"{ABREV[f.weekday()]} {f.day}" for f in dia["fecha"]]
+    ax.set_xticks(x)
+    ax.set_xticklabels(etiquetas)
+    ax.yaxis.set_major_formatter(MILES)
+    _leyenda(ax)
+    _encabezado(fig, ax, titulo, kicker)
+    total = dia["programado"] + dia["forzado"]
+    fig.hover.append((list(x), list(total), lambda i, v: f"{etiquetas[int(round(i))]}\n{v:,.0f} MW fuera de servicio"))
+    return fig
