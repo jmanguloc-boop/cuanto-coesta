@@ -123,6 +123,7 @@ class App:
         self.r = self.n = self.e = None
         self.prog = {}
         self.auto = tk.BooleanVar(value=True)
+        self.descarga_inicial_hecha = False
         # Estado de la seccion Evolucion
         self.ev_datos = None
         self.ev_barra = config.cargar_yaml("analisis")["barra_referencia"]
@@ -226,10 +227,17 @@ class App:
     def cargar_semana(self):
         semana = self.semana()
         if not semana:
+            # Primera vez (por ejemplo, recien descargado de GitHub): baja la ultima semana sola, una vez
+            primera = not self.descarga_inicial_hecha
+            mensaje = ("Primera vez: bajando la última semana del COES (2 a 3 minutos)..." if primera
+                       else "Todavía no hay datos. Pulsa «Actualizar» en Resumen.")
             for panel in self.paneles.values():
                 panel.limpiar()
-                ui.texto(panel.interior, "Todavía no hay datos. Pulsa «Actualizar» en Resumen.", 14, peso="bold").pack(anchor="w")
-            self.vista_resumen_vacia()
+                ui.texto(panel.interior, mensaje, 14, peso="bold").pack(anchor="w")
+            self.vista_resumen_vacia(mensaje)
+            if primera:
+                self.descarga_inicial_hecha = True
+                self.descargar_semana()
             return
 
         def tarea():
@@ -329,7 +337,8 @@ class App:
             ui.texto(der, "Semana", 9, P["gris"], "bold").pack(side="left", padx=(0, 8))
             self.combo = ttk.Combobox(der, state="readonly", width=28,
                                       values=[rango_corto(s) for s in self.lista], font=ui.fuente(10))
-            self.combo.current(self.indice_semana)
+            if self.lista:
+                self.combo.current(self.indice_semana)
             self.combo.bind("<<ComboboxSelected>>", self.elegir_semana)
             self.combo.pack(side="left")
             ui.boton(der, "↻  Actualizar", self.descargar_semana,
@@ -363,10 +372,12 @@ class App:
 
     # ----- pantallas -----
 
-    def vista_resumen_vacia(self):
+    def vista_resumen_vacia(self, mensaje=None):
         panel = self.paneles["resumen"]
         panel.limpiar()
         self._cabecera(panel.interior, "Resumen de la semana", "Sin datos todavía", con_controles=True)
+        if mensaje:
+            ui.texto(panel.interior, mensaje, 14, peso="bold").pack(anchor="w")
 
     def vista_resumen(self):
         r, n = self.r, self.n

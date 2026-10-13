@@ -51,6 +51,7 @@ def historial_barra(barra, con_ahora=None, raiz=None):
             serie = pd.concat([serie, tr])
     if serie.empty:
         return pd.Series(dtype=float)
+    serie["fecha_hora"] = pd.to_datetime(serie["fecha_hora"])   # sin parquet previo llega como texto
     serie["prioridad"] = (serie["fuente"] != "ieod_cmg").astype(int)   # 0 = IEOD primero
     serie = serie.sort_values(["fecha_hora", "prioridad"]).drop_duplicates("fecha_hora", keep="first")
     return serie.set_index("fecha_hora")["valor"].sort_index()

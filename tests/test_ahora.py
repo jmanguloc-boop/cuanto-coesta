@@ -76,3 +76,12 @@ def test_salto_brusco():
     assert salto_brusco(500.0, 200.0) is not None
     assert salto_brusco(230.0, 200.0) is None
     assert salto_brusco(500.0, None) is None
+
+
+def test_historia_sin_semanas_guardadas_tiene_fechas(con, tmp_path):
+    """Recien descargado de GitHub no hay parquet: la historia debe salir igual con indice de fechas."""
+    from src.analysis.rarezas import historial_barra
+    db.guardar_cmg(con, [fila("2026-10-10 10:00", 100.0), fila("2026-10-10 10:30", 110.0)], "t1")
+    serie = historial_barra("SANTA ROSA 220", con_ahora=con, raiz=tmp_path / "vacio")
+    assert isinstance(serie.index, pd.DatetimeIndex)
+    assert not evaluar(110.0, "2026-10-10 10:30", serie).es_rara
