@@ -4,7 +4,7 @@ slug: "cuanto-coesta"
 tagline: "El sistema eléctrico peruano, explicado al toque"
 
 version: "0.5.0"      # visible en la app; subir en cada entrega
-repositorio: "https://github.com/angulocardenasjosemiguel-blip/cuanto-coesta"
+repositorio: "https://github.com/jmanguloc-boop/cuanto-coesta"
 
 aviso: >
   Proyecto independiente, no afiliado al COES. Usa datos públicos del portal
