@@ -12,6 +12,21 @@ cifras, directo en el lenguaje y transparente con el método.
 
 ![La señal de la semana](docs/capturas/escritorio_senal.png)
 
+## Pruébala en tu PC (Windows, doble clic)
+
+1. Arriba en esta página: botón verde **Code → Download ZIP**.
+2. Descomprime el ZIP (clic derecho → *Extraer todo*). No lo abras desde dentro del ZIP.
+3. Doble clic en **`AbrirCuantoCOESta.bat`**.
+
+La primera vez tarda unos minutos: si no tienes Python, lo instala solo para tu usuario
+(sin administrador) y descarga las librerías. Las siguientes veces abre al instante.
+Al abrirse, la app baja sola los datos públicos del COES de los últimos días.
+
+Si Windows muestra *"Windows protegió su PC"*, haz clic en **Más información → Ejecutar de todas formas**
+(es un .bat de texto: puedes abrirlo con el Bloc de notas y ver exactamente qué hace).
+
+¿Programas? `git clone`, haz tu fork y mira [Cómo correrlo](#cómo-correrlo-3-comandos).
+
 ## Dos productos
 
 | | Cuánto COESta **Ahora** | **La semana eléctrica** |
