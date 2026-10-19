@@ -1,0 +1,5 @@
+[
+  "costo_marginal: 1368 series-dia con intervalos faltantes. Ej: AGROLMOS 60 cmg_congestion 2025-10-18 (47/48), AGROLMOS 60 cmg_energia 2025-10-18 (47/48), AGROLMOS 60 cmg_total 2025-10-18 (47/48)",
+  "costo_marginal: 20 valores menores a 0",
+  "cmg_preliminar: 942 filas duplicadas (se conserva la ultima)"
+]
