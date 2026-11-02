@@ -1,0 +1,5 @@
+[
+  "costo_marginal: 31152 filas duplicadas (se conserva la ultima)",
+  "costo_marginal: 363 series-dia con intervalos faltantes. Ej: CONVERT138 cmg_total 2026-11-01 (28/48), CONVERT138 cmg_congestion 2026-11-01 (28/48), CONVERT138 cmg_energia 2026-11-01 (28/48)",
+  "cmg_preliminar: 948 filas duplicadas (se conserva la ultima)"
+]
