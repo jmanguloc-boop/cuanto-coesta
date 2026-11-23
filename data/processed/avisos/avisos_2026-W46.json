@@ -1,5 +1,3 @@
 [
-  "costo_marginal: 585 filas duplicadas (se conserva la ultima)",
-  "costo_marginal: 1446 series-dia con intervalos faltantes. Ej: CHEVES14G2 cmg_total 2026-11-12 (20/48), CHEVES14G2 cmg_energia 2026-11-12 (20/48), CHEVES14G2 cmg_congestion 2026-11-12 (20/48)",
   "cmg_preliminar: 1035 filas duplicadas (se conserva la ultima)"
 ]
